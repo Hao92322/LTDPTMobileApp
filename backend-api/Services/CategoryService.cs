@@ -22,18 +22,19 @@ namespace ToDoApp_BackEnd.Services
         };
         //Get list
         public async Task<List<CategoryDTO>> GetListCategories(
-        int page = 1,
-        int pageSize = 20,
-        string? search = null)
+         string userId,
+         int page = 1,
+         int pageSize = 20,
+         string? search = null)
         {
-            var query = _context.Categories.AsQueryable();
+            var query = _context.Categories
+                .Where(x => x.UserId == userId);
 
-            // search theo tên, không phân biệt hoa thường
             if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(e => e.Name.Contains(search));
+                query = query.Where(x => x.Name.Contains(search));
 
             var items = await query
-                .OrderBy(e => e.Name)
+                .OrderBy(x => x.Name)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -41,27 +42,28 @@ namespace ToDoApp_BackEnd.Services
             return items.Select(MapToDTO).ToList();
         }
         // post Create 
-        public async Task<CategoryDTO> CreateCategory(CategoryRequestDTO model)
+        public async Task<CategoryDTO> CreateCategory(CategoryRequestDTO model,string userid)
         {
-            var entity = new Category { Name = model.Name };
+            
+            var entity = new Category { Name = model.Name , UserId=userid};
 
             _context.Categories.Add(entity);
             await _context.SaveChangesAsync();
 
             return MapToDTO(entity);
         }
-        public async Task<CategoryDTO> FindCategoryById(int id)
+        public async Task<CategoryDTO> FindCategoryById(int id,string userid)
         {
-            var entity = await _context.Categories.FindAsync(id)
+            var entity = await _context.Categories.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userid)
                 ?? throw new KeyNotFoundException($"Category with ID {id} not found.");
 
             return MapToDTO(entity);
         }
 
         // POST EDIT
-        public async Task<CategoryDTO> EditCategory(CategoryRequestDTO model, int id)
+        public async Task<CategoryDTO> EditCategory(CategoryRequestDTO model, int id,string userid)
         {
-            var entity = await _context.Categories.FindAsync(id)
+            var entity = await _context.Categories.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userid)
                 ?? throw new KeyNotFoundException($"Category with ID {id} not found.");
 
             entity.Name = model.Name;
@@ -70,9 +72,9 @@ namespace ToDoApp_BackEnd.Services
             return MapToDTO(entity);
         }
         // Post Detele
-        public async Task<bool> DeleteCategory(int id)
+        public async Task<bool> DeleteCategory(int id,string userid)
         {
-            var entity = await _context.Categories.FindAsync(id);
+            var entity = await _context.Categories.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userid);
             if (entity == null) return false;
             _context.Categories.Remove(entity);
             await _context.SaveChangesAsync();

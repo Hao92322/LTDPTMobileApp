@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.Validation;
+using System.Security.Claims;
 using ToDoApp_BackEnd.DTOs;
 using ToDoApp_BackEnd.Services.Interface;
 
@@ -26,7 +27,16 @@ namespace ToDoApp_BackEnd.Controllers
         [FromQuery] bool? isCompleted = null,
         [FromQuery] int? priority = null)
         {
-            var result = await _ToDoItemService.GetList(page, pageSize, categoryId, isCompleted, priority);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var result = await _ToDoItemService.GetList(
+                userId,
+                page,
+                pageSize,
+                categoryId,
+                isCompleted,
+                priority);
+
             return OkResponse(result);
         }
         [HttpPost]
@@ -38,14 +48,18 @@ namespace ToDoApp_BackEnd.Controllers
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
+
                 return ErrorResponse(string.Join(", ", errors), 400);
             }
 
-            // service không bao giờ return null, nó throw exception
-            // nên bỏ check null đi
             try
             {
-                var result = await _ToDoItemService.CreateTodo(model);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var result = await _ToDoItemService.CreateTodo(
+                    model,
+                    userId);
+
                 return OkResponse(result);
             }
             catch (Exception ex)
@@ -59,7 +73,12 @@ namespace ToDoApp_BackEnd.Controllers
         {
             try
             {
-                var result = await _ToDoItemService.FindToDoById(id);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var result = await _ToDoItemService.FindToDoById(
+                    id,
+                    userId);
+
                 return OkResponse(result);
             }
             catch (KeyNotFoundException ex)
@@ -74,7 +93,8 @@ namespace ToDoApp_BackEnd.Controllers
         {
             try
             {
-                var result = await _ToDoItemService.ToggleComplete(id);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var result = await _ToDoItemService.ToggleComplete(id,userId);
                 return OkResponse(result);
             }
             catch (KeyNotFoundException ex)
@@ -85,19 +105,37 @@ namespace ToDoApp_BackEnd.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Edit(TodoRequestDTO model,int id)
+        public async Task<IActionResult> Edit(TodoRequestDTO model, int id)
         {
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();// get error from model
-                return ErrorResponse(string.Join(", ", errors), 400);// tra ve danh sach loi cua tung proverty
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                return ErrorResponse(string.Join(", ", errors), 400);
             }
-            var tao = await _ToDoItemService.EditTodo(model, id);
-            if (tao == null)
+
+            try
             {
-                return ErrorResponse("Cannot edit ", 400);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var result = await _ToDoItemService.EditTodo(
+                    model,
+                    id,
+                    userId);
+
+                return OkResponse(result);
             }
-            return OkResponse(tao);
+            catch (KeyNotFoundException ex)
+            {
+                return ErrorResponse(ex.Message, 404);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse(ex.Message, 500);
+            }
         }
         // load du lieu cho details 
 
@@ -106,7 +144,8 @@ namespace ToDoApp_BackEnd.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _ToDoItemService.DeleteToDoItem(id);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var deleted = await _ToDoItemService.DeleteToDoItem(id,userId);
             if (!deleted) return ErrorResponse("Cannot delete this", 400);
             return OkResponse(deleted, "Delete Success");
         }
