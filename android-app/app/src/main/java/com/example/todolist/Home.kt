@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
+
 private val BackgroundCream = Color(0xFFF7EFE6)
 private val SurfaceWhite = Color(0xFFFFFFFF)
 private val InkBrown = Color(0xFF2B1D14)
@@ -41,9 +47,7 @@ private val MintBg = Color(0xFFDCEFD9)
 private val LavenderBg = Color(0xFFE7DEF7)
 private val SkyBg = Color(0xFFDBEBF6)
 
-// ----------------------------------------------------------------------------
 // Data
-// ----------------------------------------------------------------------------
 data class RoutineTask(
     val title: String,
     val subtitle: String,
@@ -53,80 +57,54 @@ data class RoutineTask(
     val streakDays: Int,
     val isDone: Boolean
 )
-
 private fun sampleTasks() = listOf(
-    RoutineTask("Drink a glass of water", "Streak 3 days", "5 min", Icons.Filled.LocalDrink, SandBg, 3, true),
-    RoutineTask("Meditate to relax", "Streak 6 days", "15 min", Icons.Filled.SelfImprovement, MintBg, 6, true),
-    RoutineTask("Stretch for 10 minutes", "Streak 5 days", "10 min", Icons.Filled.Accessibility, LavenderBg, 5, false),
-    RoutineTask("Go for a short walk", "Streak 3 days", "20 min", Icons.AutoMirrored.Filled.DirectionsWalk, SkyBg, 3, false),
+    RoutineTask("Uống Nước Sông", "Streak 3 ngày", "5 phút", Icons.Filled.LocalDrink, SandBg, 3, true),
+    RoutineTask("Thiền tích nội công", "Streak 6 ngày", "15 phút", Icons.Filled.SelfImprovement, MintBg, 6, true),
+    RoutineTask("Dãn cơ", "Streak 5 ngày", "10 phút", Icons.Filled.Accessibility, LavenderBg, 5, false),
+    RoutineTask("Đi Bộ", "Streak 3 ngày", "20 phút", Icons.AutoMirrored.Filled.DirectionsWalk, SkyBg, 3, false),
 )
-
-private data class NavItem(val icon: ImageVector, val label: String)
-
-private val navItems = listOf(
-    NavItem(Icons.Filled.Home, "Home"),
-    NavItem(Icons.Filled.CalendarMonth, "Calendar"),
-    NavItem(Icons.Filled.Add, "Add"), // center, drawn raised
-    NavItem(Icons.Filled.Insights, "Insights"),
-    NavItem(Icons.Filled.Person, "Profile"),
-)
-
-// ----------------------------------------------------------------------------
 // Screen
-// ----------------------------------------------------------------------------
 @Composable
-fun HomeScreen() {
+fun HomeScreen(innerPadding: PaddingValues) {
     val tasks = remember { sampleTasks() }
-    var selectedDay by remember { mutableIntStateOf(3) } // Thu
-    var selectedNav by remember { mutableIntStateOf(0) }
+    val today = remember { LocalDate.now() }
+    var selectedDay by remember { mutableIntStateOf(today.dayOfMonth) }
+    val formattedDate = remember(today) {
+        today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault()))
+    }
 
-    Scaffold(
-        containerColor = BackgroundCream,
-        bottomBar = {
-            CurvedBottomNav(
-                selectedIndex = selectedNav,
-                onSelect = { selectedNav = it },
-                onAddClick = { /* TODO: open "add habit" flow */ }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundCream),
+        contentPadding = PaddingValues(
+            start = 20.dp,
+            end = 20.dp,
+            top = 24.dp,
+            bottom = innerPadding.calculateBottomPadding() + 24.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(22.dp)
+    ) {
+        item { GreetingHeader(name = "Hao", date = formattedDate, tasks = tasks) }
+        item {
+            WeekDaySelector(
+                selectedDay = selectedDay,
+                onSelect = { selectedDay = it }
             )
         }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundCream),
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = 24.dp,
-                bottom = innerPadding.calculateBottomPadding() + 24.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(22.dp)
-        ) {
-            item { GreetingHeader(name = "Budi", date = "Thursday, 10 March 2025", tasks = tasks) }
-            item {
-                WeekDaySelector(
-                    selectedIndex = selectedDay,
-                    onSelect = { selectedDay = it }
-                )
-            }
-            item { ReminderCard(onSetReminder = { /* TODO */ }) }
-            item { SectionHeader(onSeeAll = { /* TODO */ }) }
-            itemsIndexed(tasks) { index, task ->
-                RoutineTaskRow(task = task, isLast = index == tasks.lastIndex)
-            }
+        item { ReminderCard(onSetReminder = { /* TODO */ }) }
+        item { SectionHeader(onSeeAll = { /* TODO */ }) }
+        itemsIndexed(tasks) { index, task ->
+            RoutineTaskRow(task = task, isLast = index == tasks.lastIndex)
         }
     }
 }
 
-// ----------------------------------------------------------------------------
 // Header — signature element: a progress ring grown from today's completion,
-// wrapped around the avatar instead of a static photo frame.
-// ----------------------------------------------------------------------------
 @Composable
 private fun GreetingHeader(name: String, date: String, tasks: List<RoutineTask>) {
     val done = tasks.count { it.isDone }
     val progress = if (tasks.isEmpty()) 0f else done / tasks.size.toFloat()
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -142,7 +120,6 @@ private fun GreetingHeader(name: String, date: String, tasks: List<RoutineTask>)
             Spacer(Modifier.height(4.dp))
             Text(text = date, fontSize = 14.sp, color = TextMuted)
         }
-
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(64.dp)) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val stroke = 5.dp.toPx()
@@ -182,22 +159,31 @@ private fun GreetingHeader(name: String, date: String, tasks: List<RoutineTask>)
     }
 }
 
-// ----------------------------------------------------------------------------
 // Week day selector
-// ----------------------------------------------------------------------------
 @Composable
-private fun WeekDaySelector(selectedIndex: Int, onSelect: (Int) -> Unit) {
-    val labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-    val dates = listOf(7, 8, 9, 10, 11, 12, 13)
+private fun WeekDaySelector(selectedDay: Int, onSelect: (Int) -> Unit) {
+    val today = remember { LocalDate.now() }
+    val daysInMonth = today.lengthOfMonth()
+    val monthDays = remember(today) {
+        (1..daysInMonth).map { day ->
+            val date = today.withDayOfMonth(day)
+            date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()) to day
+        }
+    }
 
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        itemsIndexed(labels) { index, label ->
-            val selected = index == selectedIndex
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (selectedDay - 3).coerceAtLeast(0))
+    LazyRow(
+        state = listState,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        itemsIndexed(monthDays) { _, (label, day) ->
+            val selected = day == selectedDay
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .width(46.dp)
-                    .clickable { onSelect(index) }
+                    .clickable { onSelect(day) }
             ) {
                 Text(
                     text = label,
@@ -214,7 +200,7 @@ private fun WeekDaySelector(selectedIndex: Int, onSelect: (Int) -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = dates[index].toString(),
+                        text = day.toString(),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (selected) SurfaceWhite else InkBrown
@@ -225,9 +211,7 @@ private fun WeekDaySelector(selectedIndex: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-// ----------------------------------------------------------------------------
 // Reminder card
-// ----------------------------------------------------------------------------
 @Composable
 private fun ReminderCard(onSetReminder: () -> Unit) {
     Box(
@@ -279,9 +263,7 @@ private fun ReminderCard(onSetReminder: () -> Unit) {
     }
 }
 
-// ----------------------------------------------------------------------------
 // Section header
-// ----------------------------------------------------------------------------
 @Composable
 private fun SectionHeader(onSeeAll: () -> Unit) {
     Row(
@@ -300,9 +282,7 @@ private fun SectionHeader(onSeeAll: () -> Unit) {
     }
 }
 
-// ----------------------------------------------------------------------------
 // Routine task row with a dotted timeline connecting each step
-// ----------------------------------------------------------------------------
 @Composable
 private fun RoutineTaskRow(task: RoutineTask, isLast: Boolean) {
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -346,9 +326,7 @@ private fun RoutineTaskRow(task: RoutineTask, isLast: Boolean) {
                 }
             }
         }
-
         Spacer(Modifier.width(12.dp))
-
         // Task card
         Surface(
             shape = RoundedCornerShape(18.dp),
@@ -392,96 +370,10 @@ private fun RoutineTaskRow(task: RoutineTask, isLast: Boolean) {
     }
 }
 
-// ----------------------------------------------------------------------------
-// Bottom navigation — a raised center "Add" button breaks the bar's line,
-// so the primary action keeps the visual priority it had as a lone FAB.
-// ----------------------------------------------------------------------------
-@Composable
-private fun CurvedBottomNav(
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-    onAddClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(86.dp)
-    ) {
-        Surface(
-            color = SurfaceWhite,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            shadowElevation = 12.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(72.dp)
-                .align(Alignment.BottomCenter)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                navItems.forEachIndexed { index, item ->
-                    if (index == 2) {
-                        // reserve empty space under the raised center button
-                        Spacer(modifier = Modifier.width(56.dp))
-                    } else {
-                        NavIconButton(
-                            item = item,
-                            selected = selectedIndex == index,
-                            onClick = { onSelect(index) }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Raised center button
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .size(58.dp)
-                .shadow(8.dp, CircleShape)
-                .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(AccentTerracotta, AccentTerracottaDeep)))
-                .clickable { onAddClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add new habit",
-                tint = SurfaceWhite,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun NavIconButton(item: NavItem, selected: Boolean, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.label,
-            tint = if (selected) AccentTerracotta else TextMuted,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(Modifier.height(4.dp))
-        Box(
-            modifier = Modifier
-                .size(4.dp)
-                .clip(CircleShape)
-                .background(if (selected) AccentTerracotta else Color.Transparent)
-        )
-    }
-}
 @Preview(showBackground = true, widthDp = 360, heightDp = 760)
 @Composable
 private fun MorningRoutineScreenPreview() {
     MaterialTheme {
-        HomeScreen()
+        MainScreen()
     }
 }
