@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using ToDoApp_BackEnd.DTOs;
+using ToDoApp_BackEnd.Services;
 using ToDoApp_BackEnd.Services.Interface;
 
 namespace ToDoApp_BackEnd.Controllers
@@ -22,7 +24,8 @@ namespace ToDoApp_BackEnd.Controllers
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null)
         {
-            var data = await _CategoryService.GetListCategories(page, pageSize, search);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var data = await _CategoryService.GetListCategories(userId,page, pageSize, search);
             return OkResponse(data);
         }
 
@@ -31,7 +34,8 @@ namespace ToDoApp_BackEnd.Controllers
         {
             try
             {
-                var data = await _CategoryService.FindCategoryById(id);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // lay id tu user
+                var data = await _CategoryService.FindCategoryById(id,userId);
                 return OkResponse(data);
             }
             catch (KeyNotFoundException ex)
@@ -56,7 +60,9 @@ namespace ToDoApp_BackEnd.Controllers
 
             try
             {
-                var result = await _CategoryService.CreateCategory(model);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var result = await _CategoryService.CreateCategory(model, userId);
                 return OkResponse(result);
             }
             catch (Exception ex)
@@ -79,7 +85,8 @@ namespace ToDoApp_BackEnd.Controllers
 
             try
             {
-                var result = await _CategoryService.EditCategory(model, id);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var result = await _CategoryService.EditCategory(model, id,userId);
                 return OkResponse(result);
             }
             catch (KeyNotFoundException ex)
@@ -97,8 +104,8 @@ namespace ToDoApp_BackEnd.Controllers
         public async Task<IActionResult> Delete(int id)
         {
 
-
-            var xoa = await _CategoryService.DeleteCategory(id);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var xoa = await _CategoryService.DeleteCategory(id,userId);
             if (!xoa)
             {
                 return ErrorResponse("NotFound category to delete", 404);
