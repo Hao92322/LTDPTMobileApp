@@ -1,6 +1,9 @@
 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using ToDoApp_BackEnd.Data;
 using ToDoApp_BackEnd.Models;
 using ToDoApp_BackEnd.Services;
@@ -34,22 +37,47 @@ namespace ToDoApp_BackEnd
             Console.WriteLine("Chuỗi kết nối lấy được là: " + connectionString);
 
          
-            // set identity pas 
-           builder.Services.AddDefaultIdentity<User>(options =>
-           {
-               options.SignIn.RequireConfirmedAccount = false;
-               // Tùy chỉnh độ phức tạp mật khẩu 
-               options.Password.RequireDigit = true;
-               options.Password.RequireNonAlphanumeric = false;
-           })
-           .AddEntityFrameworkStores<ApplicationDbContext>();
+            // Identity
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequiredLength = 6;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
+            // JWT
+            var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"]!;
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme; // dung JWT de kiem tra danh tinh
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme; // neu ma doi api thi se ep no login 
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true, // kiem tra xen dung token  my server create ko
+                    ValidateAudience = true, // kiem tra xe mdung app ko 
+                    ValidateLifetime = true, // check vong doi cua cookie 
+                    ValidateIssuerSigningKey = true, // check code token 
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+                };
+            });
 
             // dang ki pham vi service 
 
             builder.Services.AddScoped<ICategoryService, CategoryService>();
             builder.Services.AddScoped<IToDoItemService, ToDoItemService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
 
-            
+
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             //builder.Services.AddOpenApi();
             var app = builder.Build();
@@ -64,9 +92,8 @@ namespace ToDoApp_BackEnd
 
             }
 
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
+            app.UseHttpsRedirection(); // kiem tra dang nhap chua -> Create Oject 
+            app.UseAuthorization();// roi moi phan quyen-> wwho arre u 
 
             
             app.MapControllers();

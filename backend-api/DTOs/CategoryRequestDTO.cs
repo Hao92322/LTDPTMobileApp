@@ -2,7 +2,7 @@
 
 namespace ToDoApp_BackEnd.DTOs
 {
-    public class CreateCategoryDTO
+    public class CategoryRequestDTO
     {
         // hứng dữ liệu từ app xuống , check validation ở đây 
         [Required(ErrorMessage = "Tên danh mục không được để trống")]

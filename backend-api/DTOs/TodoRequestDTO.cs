@@ -2,7 +2,7 @@
 
 namespace ToDoApp_BackEnd.DTOs
 {
-    public class CreateTodoDTO
+    public class TodoRequestDTO
     {
         //  dữ liệu đc nhận, check validation ở đây
         [Required(ErrorMessage = "Tiêu đề là bắt buộc")]
@@ -13,7 +13,11 @@ namespace ToDoApp_BackEnd.DTOs
         public DateTime? DueDate { get; set; }
         [Range(0, 2, ErrorMessage = "Độ ưu tiên phải nằm trong khoảng 0-2")]
         public int Priority { get; set; } = 0;
+
+        public bool? IsCompleted { get; set; } 
+
         [Required(ErrorMessage = "Phải chọn danh mục cho công việc này")]
         public int CategoryId { get; set; }
+
     }
 }
