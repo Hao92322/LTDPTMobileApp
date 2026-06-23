@@ -1,4 +1,5 @@
-package com.example.todolist
+package com.example.todolist.ui.home
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,67 +11,61 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.ui.navigation.MainScreen
+import com.example.todolist.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val BackgroundCream = Color(0xFFF7EFE6)
-private val SurfaceWhite = Color(0xFFFFFFFF)
-private val InkBrown = Color(0xFF2B1D14)
-private val TextMuted = Color(0xFF9C8C7E)
-private val AccentTerracotta = Color(0xFFB5611E)
-private val AccentTerracottaDeep = Color(0xFF7A3E10)
-private val PeachStart = Color(0xFFFBCBA0)
-private val PeachEnd = Color(0xFFF4925A)
-private val StreakOrange = Color(0xFFFF7A30)
-private val RingTrack = Color(0xFFEADFD2)
-private val SandBg = Color(0xFFFBE3C3)
-private val MintBg = Color(0xFFDCEFD9)
-private val LavenderBg = Color(0xFFE7DEF7)
-private val SkyBg = Color(0xFFDBEBF6)
-
-// Data
-data class RoutineTask(
-    val title: String,
-    val subtitle: String,
-    val time: String,
-    val icon: ImageVector,
-    val iconBg: Color,
-    val streakDays: Int,
-    val isDone: Boolean
-)
-private fun sampleTasks() = listOf(
-    RoutineTask("Uống Nước Sông", "Streak 3 ngày", "5 phút", Icons.Filled.LocalDrink, SandBg, 3, true),
-    RoutineTask("Thiền tích nội công", "Streak 6 ngày", "15 phút", Icons.Filled.SelfImprovement, MintBg, 6, true),
-    RoutineTask("Dãn cơ", "Streak 5 ngày", "10 phút", Icons.Filled.Accessibility, LavenderBg, 5, false),
-    RoutineTask("Đi Bộ", "Streak 3 ngày", "20 phút", Icons.AutoMirrored.Filled.DirectionsWalk, SkyBg, 3, false),
-)
 // Screen
 @Composable
-fun HomeScreen(innerPadding: PaddingValues) {
-    val tasks = remember { sampleTasks() }
+fun HomeScreen(
+    innerPadding: PaddingValues,
+    viewModel: HomeViewModel = viewModel()
+) {
+    val tasks by viewModel.todoList.collectAsState()
+    
+    HomeContent(
+        innerPadding = innerPadding,
+        tasks = tasks,
+        onTaskToggle = { globalIndex ->
+            viewModel.toggleTodoStatus(globalIndex)
+        }
+    )
+}
+
+@Composable
+private fun HomeContent(
+    innerPadding: PaddingValues,
+    tasks: List<HomeUiState>,
+    onTaskToggle: (Int) -> Unit
+) {
     val today = remember { LocalDate.now() }
     var selectedDay by remember { mutableIntStateOf(today.dayOfMonth) }
     val formattedDate = remember(today) {
         today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.getDefault()))
+    }
+
+    val tasksByCategory = remember(tasks) {
+        tasks.groupBy { it.category }
     }
 
     LazyColumn(
@@ -93,16 +88,25 @@ fun HomeScreen(innerPadding: PaddingValues) {
             )
         }
         item { ReminderCard(onSetReminder = { /* TODO */ }) }
-        item { SectionHeader(onSeeAll = { /* TODO */ }) }
-        itemsIndexed(tasks) { index, task ->
-            RoutineTaskRow(task = task, isLast = index == tasks.lastIndex)
+        
+        tasksByCategory.forEach { (category, categoryTasks) ->
+            item { SectionHeader(title = category, onSeeAll = { /* TODO */ }) }
+            itemsIndexed(categoryTasks) { _, task ->
+                val globalIndex = tasks.indexOf(task)
+                RoutineTaskRow(
+                    task = task, 
+                    isLast = task == categoryTasks.last(), 
+                    onItemClick = { onTaskToggle(globalIndex) }
+                )
+            }
         }
     }
 }
 
-// Header — signature element: a progress ring grown from today's completion,
+// Header — Load thong tin nguoi dung ngay thang nam hien tai
+//Load them tien trinh cua nguoi dung trong ngay
 @Composable
-private fun GreetingHeader(name: String, date: String, tasks: List<RoutineTask>) {
+private fun GreetingHeader(name: String, date: String, tasks: List<HomeUiState>) {
     val done = tasks.count { it.isDone }
     val progress = if (tasks.isEmpty()) 0f else done / tasks.size.toFloat()
     Row(
@@ -128,16 +132,16 @@ private fun GreetingHeader(name: String, date: String, tasks: List<RoutineTask>)
                     startAngle = -90f,
                     sweepAngle = 360f,
                     useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                    style = Stroke(stroke)
                 )
                 drawArc(
                     color = StreakOrange,
                     startAngle = -90f,
                     sweepAngle = 360f * progress,
                     useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    style = Stroke(
                         width = stroke,
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                        cap = StrokeCap.Round
                     )
                 )
             }
@@ -158,7 +162,6 @@ private fun GreetingHeader(name: String, date: String, tasks: List<RoutineTask>)
         }
     }
 }
-
 // Week day selector
 @Composable
 private fun WeekDaySelector(selectedDay: Int, onSelect: (Int) -> Unit) {
@@ -170,7 +173,6 @@ private fun WeekDaySelector(selectedDay: Int, onSelect: (Int) -> Unit) {
             date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()) to day
         }
     }
-
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = (selectedDay - 3).coerceAtLeast(0))
     LazyRow(
         state = listState,
@@ -265,13 +267,13 @@ private fun ReminderCard(onSetReminder: () -> Unit) {
 
 // Section header
 @Composable
-private fun SectionHeader(onSeeAll: () -> Unit) {
+private fun SectionHeader(title: String, onSeeAll: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Daily routine", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = InkBrown)
+        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = InkBrown)
         Text(
             "See all",
             fontSize = 13.sp,
@@ -281,10 +283,9 @@ private fun SectionHeader(onSeeAll: () -> Unit) {
         )
     }
 }
-
 // Routine task row with a dotted timeline connecting each step
 @Composable
-private fun RoutineTaskRow(task: RoutineTask, isLast: Boolean) {
+private fun RoutineTaskRow(task: HomeUiState, isLast: Boolean, onItemClick: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth()) {
         // Timeline column
         Column(
@@ -329,9 +330,11 @@ private fun RoutineTaskRow(task: RoutineTask, isLast: Boolean) {
         Spacer(Modifier.width(12.dp))
         // Task card
         Surface(
+            onClick = onItemClick,
             shape = RoundedCornerShape(18.dp),
-            color = SurfaceWhite,
-            shadowElevation = 1.dp,
+            color = if (task.isDone) Color(0xFFE8F5E9) else SurfaceWhite,
+            shadowElevation = if (task.isDone) 0.dp else 1.dp,
+            tonalElevation = 0.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = if (isLast) 0.dp else 14.dp)
@@ -346,14 +349,12 @@ private fun RoutineTaskRow(task: RoutineTask, isLast: Boolean) {
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(task.iconBg),
+                        .background(if (task.isDone) Color.Transparent else task.iconBg),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(task.icon, contentDescription = task.title, tint = InkBrown, modifier = Modifier.size(22.dp))
                 }
-
                 Spacer(Modifier.width(12.dp))
-
                 Column(modifier = Modifier.weight(1f)) {
                     Text(task.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = InkBrown)
                     Spacer(Modifier.height(2.dp))
@@ -374,6 +375,13 @@ private fun RoutineTaskRow(task: RoutineTask, isLast: Boolean) {
 @Composable
 private fun MorningRoutineScreenPreview() {
     MaterialTheme {
-        MainScreen()
+        HomeContent(
+            innerPadding = PaddingValues(0.dp),
+            tasks = listOf(
+                HomeUiState("Morning Water", "Streak 3", "5m", Icons.Filled.LocalDrink, Color.Cyan, 3, true, "Morning"),
+                HomeUiState("Check Email", "Inbox", "10m", Icons.Filled.Email, Color.Yellow, 0, false, "Work")
+            ),
+            onTaskToggle = {}
+        )
     }
 }

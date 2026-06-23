@@ -1,4 +1,4 @@
-package com.example.todolist
+package com.example.todolist.ui.navigation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.todolist.ui.home.HomeScreen
 
 // These colors are copied from Home.kt. In a real app, these should be in a Theme.
 private val BackgroundCream = Color(0xFFF7EFE6)
@@ -24,9 +25,7 @@ private val SurfaceWhite = Color(0xFFFFFFFF)
 private val TextMuted = Color(0xFF9C8C7E)
 private val AccentTerracotta = Color(0xFFB5611E)
 private val AccentTerracottaDeep = Color(0xFF7A3E10)
-
 data class NavItem(val icon: ImageVector, val label: String)
-
 val navItems = listOf(
     NavItem(Icons.Filled.Home, "Home"),
     NavItem(Icons.Filled.CalendarMonth, "Calendar"),
@@ -34,11 +33,9 @@ val navItems = listOf(
     NavItem(Icons.Filled.Insights, "Insights"),
     NavItem(Icons.Filled.Person, "Profile"),
 )
-
 @Composable
 fun MainScreen() {
     var selectedNav by remember { mutableIntStateOf(0) }
-
     Scaffold(
         containerColor = BackgroundCream,
         bottomBar = {
@@ -53,7 +50,6 @@ fun MainScreen() {
         HomeScreen(innerPadding = innerPadding)
     }
 }
-
 @Composable
 private fun CurvedBottomNav(
     selectedIndex: Int,
@@ -93,7 +89,6 @@ private fun CurvedBottomNav(
                 }
             }
         }
-
         // Raised center button
         Box(
             modifier = Modifier
