@@ -28,6 +28,7 @@ namespace ToDoApp_BackEnd.Controllers
         [FromQuery] int? priority = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
 
             var result = await _ToDoItemService.GetList(
                 userId,
@@ -55,7 +56,7 @@ namespace ToDoApp_BackEnd.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
                 var result = await _ToDoItemService.CreateTodo(
                     model,
                     userId);
@@ -74,6 +75,7 @@ namespace ToDoApp_BackEnd.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
 
                 var result = await _ToDoItemService.FindToDoById(
                     id,
@@ -94,6 +96,7 @@ namespace ToDoApp_BackEnd.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
                 var result = await _ToDoItemService.ToggleComplete(id,userId);
                 return OkResponse(result);
             }
@@ -120,6 +123,7 @@ namespace ToDoApp_BackEnd.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
 
                 var result = await _ToDoItemService.EditTodo(
                     model,
@@ -145,6 +149,7 @@ namespace ToDoApp_BackEnd.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
             var deleted = await _ToDoItemService.DeleteToDoItem(id,userId);
             if (!deleted) return ErrorResponse("Cannot delete this", 400);
             return OkResponse(deleted, "Delete Success");

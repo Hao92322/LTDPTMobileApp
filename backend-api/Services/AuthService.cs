@@ -14,9 +14,9 @@ namespace ToDoApp_BackEnd.Services
 {
     public class AuthService:IAuthService
     {
-        private readonly UserManager<IdentityUser> _userManager; // co san tu thu vien identity 
+        private readonly UserManager<User> _userManager; // co san tu thu vien identity 
         private readonly IConfiguration _config; //dung de doc cau hinh
-        public AuthService(UserManager<IdentityUser> userManager, IConfiguration config)
+        public AuthService(UserManager<User> userManager, IConfiguration config)
         {
             _userManager = userManager;
             _config = config;
@@ -58,7 +58,7 @@ namespace ToDoApp_BackEnd.Services
             if (existingUser != null)
                 throw new InvalidOperationException("Email already exists.");
 
-            var user = new IdentityUser
+            var user = new User
             {
                 Email = model.Email,
                 UserName = model.UserName

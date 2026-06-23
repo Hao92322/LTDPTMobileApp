@@ -25,6 +25,7 @@ namespace ToDoApp_BackEnd.Controllers
         [FromQuery] string? search = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
             var data = await _CategoryService.GetListCategories(userId,page, pageSize, search);
             return OkResponse(data);
         }
@@ -35,6 +36,7 @@ namespace ToDoApp_BackEnd.Controllers
             try
             {
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // lay id tu user
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
                 var data = await _CategoryService.FindCategoryById(id,userId);
                 return OkResponse(data);
             }
@@ -61,6 +63,7 @@ namespace ToDoApp_BackEnd.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
 
                 var result = await _CategoryService.CreateCategory(model, userId);
                 return OkResponse(result);
@@ -86,6 +89,7 @@ namespace ToDoApp_BackEnd.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
                 var result = await _CategoryService.EditCategory(model, id,userId);
                 return OkResponse(result);
             }
@@ -105,6 +109,7 @@ namespace ToDoApp_BackEnd.Controllers
         {
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
             var xoa = await _CategoryService.DeleteCategory(id,userId);
             if (!xoa)
             {
