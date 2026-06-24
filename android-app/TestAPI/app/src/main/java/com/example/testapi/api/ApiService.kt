@@ -1,33 +1,20 @@
 package com.example.testapi.api
 
-import com.example.testapi.models.ApiResponse
-import com.example.testapi.models.Category
-import com.example.testapi.models.CategoryRequest
-import com.example.testapi.models.LoginRequest
-import com.example.testapi.models.LoginResponse
-import com.example.testapi.models.RegisterRequest
-import com.example.testapi.models.TodoItem
-import com.example.testapi.models.TodoItemRequest
+import com.example.testapi.models.*
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.DELETE
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.PATCH
-import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Path
-import retrofit2.http.Query
+import retrofit2.http.*
 
+// ========== ENDPOINT API ==========
 interface ApiService {
-    // ========== AUTH APIs ==========
-    @POST("api/auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<Unit>>
 
+    // ========== AUTH API ==========
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    // ========== CATEGORY APIs ==========
+    @POST("api/auth/register")
+    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<Unit>>
+
+    // ========== CATEGORY API ==========
     @GET("api/category")
     suspend fun getCategories(
         @Query("page") page: Int = 1,
@@ -56,9 +43,12 @@ interface ApiService {
     ): Response<ApiResponse<Category>>
 
     @DELETE("api/category/{id}")
-    suspend fun deleteCategory(@Path("id") id: Int, @Header("Authorization") token: String): Response<Void>
+    suspend fun deleteCategory(
+        @Path("id") id: Int,
+        @Header("Authorization") token: String
+    ): Response<Void>  //Backend trả về string, dùng Void để bỏ qua parse
 
-    // ========== TODOITEM APIs ==========
+    // ========== TODO ITEM API ==========
     @GET("api/todoitem")
     suspend fun getTodoItems(
         @Query("categoryId") categoryId: Int,
@@ -88,11 +78,8 @@ interface ApiService {
     ): Response<ApiResponse<TodoItem>>
 
     @DELETE("api/todoitem/{id}")
-    suspend fun deleteTodoItem(@Path("id") id: Int, @Header("Authorization") token: String): Response<Void>
-
-    @PATCH("api/todoitem/{id}/toggle-complete")
-    suspend fun toggleComplete(
+    suspend fun deleteTodoItem(
         @Path("id") id: Int,
         @Header("Authorization") token: String
-    ): Response<ApiResponse<Map<String, Boolean>>>
+    ): Response<Void>
 }

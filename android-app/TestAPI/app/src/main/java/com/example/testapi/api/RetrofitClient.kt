@@ -5,15 +5,16 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-
+//  ======= Gọi API =======
 object RetrofitClient {
-    // ⚠️ QUAN TRỌNG:
-    // - Android Emulator: dùng 10.0.2.2
-    // - Device thật (cùng WiFi): dùng IP máy tính (ví dụ: 192.168.1.100)
-    // - Cần sửa lại base_url cho khớp với backend
-//    private const val BASE_URL = "http://192.168.1.244:5158/" dùng để test điện thoại thật
-//    private const val BASE_URL = "http://10.0.2.2:5158/" // dùng để test điện thoại ảo
+    // ===================== TESTER CHÚ Ý =================================
+    //   Đổi IP nếu cần
+    // - Android Emulator: http://10.0.2.2:5158/
+    // - Thiết bị thật: http://192.168.1.244:5158/
+    // ===================== 🫩🫩🫩 =================================
     private const val BASE_URL = "http://192.168.1.244:5158/"
+
+    // Logging interceptor để xem request/response
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }

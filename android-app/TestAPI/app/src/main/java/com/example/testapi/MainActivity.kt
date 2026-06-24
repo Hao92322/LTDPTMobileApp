@@ -2,30 +2,49 @@ package com.example.testapi
 
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.testapi.utils.ApiTester
+import com.example.testapi.utils.TokenManager
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var apiTester: ApiTester
+
+    companion object {
+        private const val TAG = "MAIN_ACTIVITY"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        // Khởi tạo ApiTester với context
+        apiTester = ApiTester(this)
+
+        Log.d(TAG, "🚀 App started")
+        Log.d(TAG, "====================================")
+
+        // Kiểm tra trạng thái login
+        if (TokenManager.isLoggedIn(this)) {
+            Log.d(TAG, "✅ User already logged in")
+            val token = TokenManager.getAccessToken(this)
+            Log.d(TAG, "🔑 Token (first 30 chars): ${token?.take(30)}...")
+
+            if (TokenManager.isTokenExpiringSoon(this)) {
+                Log.d(TAG, "⚠️ Token expiring soon")
+            }
+        } else {
+            Log.d(TAG, "❌ No login session - will login")
         }
 
-        // ==========================================
-        // THÊM PHẦN NÀY ĐỂ GỌI API TEST
-        // ==========================================
-        Log.d("MAIN", "🚀 App started - Starting API test...")
-
-        val apiTester = ApiTester()
+        // Bắt đầu test API
+        Log.d(TAG, "📡 Starting API tests...")
         apiTester.runAllTests()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // KHÔNG xóa token khi đóng app (persistent)
+
     }
 }

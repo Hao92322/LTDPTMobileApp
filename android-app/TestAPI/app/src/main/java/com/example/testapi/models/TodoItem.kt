@@ -4,17 +4,17 @@ data class TodoItem(
     val id: Int,
     val title: String,
     val description: String?,
-    val isCompleted: Boolean,
-    val dueDate: String?,
-    val priority: Int,
+    val isCompleted: Boolean = false,
+    val dueDate: String? = null,
+    val priority: Int = 1,
     val categoryId: Int,
-    val createdAt: String
+    val createdAt: String? = null
 )
 
 data class TodoItemRequest(
     val title: String,
     val description: String?,
-    val dueDate: String?,
-    val priority: Int,
+    val dueDate: String? = null,
+    val priority: Int = 1,
     val categoryId: Int
 )

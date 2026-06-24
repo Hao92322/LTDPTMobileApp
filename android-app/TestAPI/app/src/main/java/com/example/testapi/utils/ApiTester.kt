@@ -1,5 +1,6 @@
 package com.example.testapi.utils
 
+import android.content.Context
 import android.util.Log
 import com.example.testapi.api.RetrofitClient
 import com.example.testapi.models.CategoryRequest
@@ -9,9 +10,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class ApiTester {
+/**
+ * ApiTester - Test tất cả API endpoints
+ *
+ * 📌 FLOW:
+ * 1. Login → Lưu token vào EncryptedSharedPreferences
+ * 2. Lấy token từ storage để gọi các API khác
+ * 3. Test đầy đủ 8 bước CRUD
+ */
+class ApiTester(private val context: Context) {
+
     private val apiService = RetrofitClient.apiService
-    private var authToken: String = ""
     private var testCategoryId: Int = 0
     private var testTodoId: Int = 0
 
@@ -22,23 +31,46 @@ class ApiTester {
     }
 
     fun runAllTests() {
-        Log.d(TAG, "🚀 STARTING 8-STEP CRUD TEST (NO TOGGLE)")
+        Log.d(TAG, "🚀 STARTING 8-STEP CRUD TEST")
         Log.d(TAG, "================================")
-        Log.d(TAG, "Target Backend: http://192.168.1.244:5158")
+        Log.d(TAG, "Storage: EncryptedSharedPreferences (localStorage equivalent)")
 
         CoroutineScope(Dispatchers.IO).launch {
-            testLogin()
+            // Kiểm tra đã có token chưa
+            if (TokenManager.isLoggedIn(context)) {
+                Log.d(TAG, "✅ User already logged in - reusing token")
+                testGetCategories()
+            } else {
+                Log.d(TAG, "❌ No token found - logging in...")
+                testLogin()
+            }
         }
     }
 
-    // 1️⃣ LOGIN
+    // 1️⃣ LOGIN & LƯU TOKEN
     private suspend fun testLogin() {
         try {
             Log.d(TAG, "\n📝 TEST 1/8: LOGIN")
             val response = apiService.login(LoginRequest(TEST_EMAIL, TEST_PASSWORD))
+
             if (response.isSuccessful && response.body()?.success == true) {
-                authToken = response.body()!!.data?.token ?: ""
+                val token = response.body()!!.data?.token ?: ""
+
+                val expiresIn = 3600L
+
+                Log.d(TAG, "🔑 Token received: ${token.take(30)}...")
+                Log.d(TAG, "⏰ Expires in: $expiresIn seconds")
+
+                //  LƯU TOKEN VÀO ENCRYPTED SHARED PREFERENCES
+                TokenManager.saveToken(
+                    context = context,
+                    accessToken = token,
+                    expiresIn = expiresIn
+                )
+
                 Log.d(TAG, "✅ LOGIN SUCCESS (200 OK)")
+                Log.d(TAG, "💾 Token saved to EncryptedSharedPreferences")
+
                 testGetCategories()
             } else {
                 Log.e(TAG, "❌ LOGIN FAILED: ${response.code()}")
@@ -48,13 +80,25 @@ class ApiTester {
         }
     }
 
-    // 2️⃣ GET ALL CATEGORIES
+    // 2️⃣ GET ALL CATEGORIES (Lấy token từ storage)
     private suspend fun testGetCategories() {
         try {
             Log.d(TAG, "\n📂 TEST 2/8: GET ALL CATEGORIES")
-            val response = apiService.getCategories(page = 1, pageSize = 20, search = null, token = "Bearer $authToken")
+
+            // ✅ LẤY TOKEN TỪ STORAGE
+            val token = TokenManager.getAccessToken(context) ?: run {
+                Log.e(TAG, "❌ No token in storage!")
+                return
+            }
+
+            val response = apiService.getCategories(
+                page = 1, pageSize = 20, search = null,
+                token = "Bearer $token"
+            )
+
             if (response.isSuccessful && response.body()?.success == true) {
-                Log.d(TAG, "✅ GET CATEGORIES SUCCESS (200 OK)")
+                val count = response.body()!!.data?.size ?: 0
+                Log.d(TAG, "✅ GET CATEGORIES SUCCESS (200 OK) | Count: $count")
                 testCreateCategory()
             } else {
                 Log.e(TAG, "❌ GET CATEGORIES FAILED: ${response.code()}")
@@ -68,10 +112,14 @@ class ApiTester {
     private suspend fun testCreateCategory() {
         try {
             Log.d(TAG, "\n➕ TEST 3/8: CREATE CATEGORY")
+
+            val token = TokenManager.getAccessToken(context) ?: return
+
             val response = apiService.createCategory(
                 CategoryRequest("Test Cat - ${System.currentTimeMillis()}"),
-                "Bearer $authToken"
+                "Bearer $token"
             )
+
             if (response.isSuccessful && response.body()?.success == true) {
                 testCategoryId = response.body()!!.data?.id ?: 0
                 Log.d(TAG, "✅ CREATE CATEGORY SUCCESS (200 OK) | ID: $testCategoryId")
@@ -89,7 +137,11 @@ class ApiTester {
         if (testCategoryId == 0) return
         try {
             Log.d(TAG, "\n🔍 TEST 4/8: GET CATEGORY BY ID ($testCategoryId)")
-            val response = apiService.getCategoryById(testCategoryId, "Bearer $authToken")
+
+            val token = TokenManager.getAccessToken(context) ?: return
+
+            val response = apiService.getCategoryById(testCategoryId, "Bearer $token")
+
             if (response.isSuccessful && response.body()?.success == true) {
                 Log.d(TAG, "✅ GET CATEGORY BY ID SUCCESS (200 OK)")
                 testUpdateCategory()
@@ -106,11 +158,15 @@ class ApiTester {
         if (testCategoryId == 0) return
         try {
             Log.d(TAG, "\n✏️ TEST 5/8: UPDATE CATEGORY ($testCategoryId)")
+
+            val token = TokenManager.getAccessToken(context) ?: return
+
             val response = apiService.updateCategory(
                 testCategoryId,
                 CategoryRequest("Updated Cat - ${System.currentTimeMillis()}"),
-                "Bearer $authToken"
+                "Bearer $token"
             )
+
             if (response.isSuccessful && response.body()?.success == true) {
                 Log.d(TAG, "✅ UPDATE CATEGORY SUCCESS (200 OK)")
                 testCreateTodoItem()
@@ -127,6 +183,9 @@ class ApiTester {
         if (testCategoryId == 0) return
         try {
             Log.d(TAG, "\n📝 TEST 6/8: CREATE TODO ITEM")
+
+            val token = TokenManager.getAccessToken(context) ?: return
+
             val request = TodoItemRequest(
                 title = "Test Todo - ${System.currentTimeMillis()}",
                 description = "Full CRUD verification",
@@ -134,11 +193,13 @@ class ApiTester {
                 priority = 1,
                 categoryId = testCategoryId
             )
-            val response = apiService.createTodoItem(request, "Bearer $authToken")
+
+            val response = apiService.createTodoItem(request, "Bearer $token")
+
             if (response.isSuccessful && response.body()?.success == true) {
                 testTodoId = response.body()!!.data?.id ?: 0
                 Log.d(TAG, "✅ CREATE TODO ITEM SUCCESS (200 OK) | ID: $testTodoId")
-                testDeleteTodoItem() // ⬅️ NỐI THẲNG SANG DELETE TODO (BỎ TOGGLE)
+                testDeleteTodoItem()
             } else {
                 Log.e(TAG, "❌ CREATE TODO ITEM FAILED: ${response.code()}")
             }
@@ -153,9 +214,10 @@ class ApiTester {
         try {
             Log.d(TAG, "\n🗑️ TEST 7/8: DELETE TODO ITEM ($testTodoId)")
 
-            val response = apiService.deleteTodoItem(testTodoId, "Bearer $authToken")
+            val token = TokenManager.getAccessToken(context) ?: return
 
-            // ✅ Chỉ cần check status code 200 là đủ
+            val response = apiService.deleteTodoItem(testTodoId, "Bearer $token")
+
             if (response.isSuccessful && response.code() == 200) {
                 Log.d(TAG, "✅ DELETE TODO ITEM SUCCESS (200 OK)")
                 testDeleteCategory()
@@ -172,17 +234,28 @@ class ApiTester {
         if (testCategoryId == 0) return
         try {
             Log.d(TAG, "\n🗑️ TEST 8/8: DELETE CATEGORY ($testCategoryId)")
-            val response = apiService.deleteCategory(testCategoryId, "Bearer $authToken")
 
-            // ✅ Chỉ check status code
+            val token = TokenManager.getAccessToken(context) ?: return
+
+            val response = apiService.deleteCategory(testCategoryId, "Bearer $token")
+
             if (response.isSuccessful && response.code() == 200) {
                 Log.d(TAG, "✅ DELETE CATEGORY SUCCESS (200 OK)")
                 Log.d(TAG, "\n🎉 ALL 8 CRUD TESTS PASSED WITH 200 OK!")
+                Log.d(TAG, "💾 Token stored in: EncryptedSharedPreferences (localStorage)")
+                Log.d(TAG, "🔐 Token is encrypted with AES256")
+                Log.d(TAG, "✅ Token persists across app restarts")
             } else {
                 Log.e(TAG, "❌ DELETE CATEGORY FAILED: ${response.code()}")
             }
         } catch (e: Exception) {
             Log.e(TAG, "❌ DELETE CATEGORY ERROR: ${e.message}")
         }
+    }
+
+    // Helper: Logout
+    fun logout() {
+        TokenManager.clearToken(context)
+        Log.d(TAG, "🚪 User logged out - Token cleared")
     }
 }

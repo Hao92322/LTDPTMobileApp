@@ -7,7 +7,9 @@ data class LoginRequest(
 
 data class RegisterRequest(
     val email: String,
-    val password: String
+    val password: String,
+    val userName: String,
+    val confirmPassword: String
 )
 
 data class LoginResponse(
@@ -18,12 +20,11 @@ data class LoginResponse(
 
 data class AuthData(
     val token: String,
-    val expiresIn: Int
+    val expiresIn: Int = 3600
 )
 
 data class ApiResponse<T>(
     val success: Boolean,
     val message: String,
-    val data: T?,
-    val statusCode: Int = 200
+    val data: T?
 )
