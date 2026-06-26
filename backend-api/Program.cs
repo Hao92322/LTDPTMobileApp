@@ -31,13 +31,21 @@ namespace ToDoApp_BackEnd
             });
 
             // 1. Cấu hình kết nối SQL Server (đọc từ appsettings.json)
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            //builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            //    options.UseSqlServer(connectionString));
+            //cấu hình Mysql
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(connectionString));
-            Console.WriteLine("Chuỗi kết nối lấy được là: " + connectionString);
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(
+            builder.Configuration.GetConnectionString("DefaultConnection"))));
+
+
+            //Console.WriteLine("Chuỗi kết nối lấy được là: " + connectionString);
 
          
-            // Identity
+            //declare for Identity use whole project 
             builder.Services.AddIdentity<User, IdentityRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -50,7 +58,7 @@ namespace ToDoApp_BackEnd
 
             // JWT
             var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"]!;
+            var secretKey = jwtSettings["SecretKey"]?? throw new Exception("Missing JwtSettings:SecretKey");
 
             builder.Services.AddAuthentication(options =>
             {
@@ -93,6 +101,7 @@ namespace ToDoApp_BackEnd
             }
 
             app.UseHttpsRedirection(); // kiem tra dang nhap chua -> Create Oject 
+            app.UseAuthentication();   // 🔴 PHẢI có
             app.UseAuthorization();// roi moi phan quyen-> wwho arre u 
 
             

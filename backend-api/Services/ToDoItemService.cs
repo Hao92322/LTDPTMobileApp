@@ -13,11 +13,11 @@ namespace ToDoApp_BackEnd.Services
         private readonly ApplicationDbContext _context;
         public ToDoItemService(ApplicationDbContext context)
         {
-            _context= context;
+            _context = context;
         }
 
         //get list 
-        
+
         private static TodoItemDTO MapToDTO(TodoItem entity) => new TodoItemDTO
         {
             Id = entity.Id,
@@ -38,7 +38,7 @@ namespace ToDoApp_BackEnd.Services
         {
             var query = _context.TodoItems
                 .Include(x => x.Category)
-                .Where(x => x.Category.UserId == userId);
+                .Where(x=> x.UserId==userId);
 
             if (categoryId.HasValue)
                 query = query.Where(x => x.CategoryId == categoryId.Value);
@@ -70,14 +70,17 @@ namespace ToDoApp_BackEnd.Services
 
             if (category == null)
                 throw new KeyNotFoundException("Category not found.");
+            if (model.Date.Date < DateTime.UtcNow) throw new KeyNotFoundException("Cannot Create Date in past.");
+
 
             var entity = new TodoItem
             {
                 Title = model.Title,
                 Description = model.Description,
                 CategoryId = model.CategoryId,
-                DueDate = model.DueDate,
+                DueDate = model.Date.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
                 Priority = model.Priority,
+                CreatedAt = DateTime.UtcNow,
                 IsCompleted = false
             };
 
@@ -93,7 +96,7 @@ namespace ToDoApp_BackEnd.Services
                 .Include(x => x.Category)
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&
-                    x.Category.UserId == userId)
+                    x.Category!.UserId == userId || x.UserId==userId )
                 ?? throw new KeyNotFoundException($"Todo with ID {id} not found.");
 
             return MapToDTO(entity);
@@ -111,7 +114,7 @@ namespace ToDoApp_BackEnd.Services
                 .Include(x => x.Category)
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&
-                    x.Category.UserId == userId)
+                    x.Category!.UserId == userId )
                 ?? throw new KeyNotFoundException($"Todo with ID {id} not found.");
 
             var category = await _context.Categories
@@ -139,7 +142,7 @@ namespace ToDoApp_BackEnd.Services
                 .Include(x => x.Category)
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&
-                    x.Category.UserId == userId)
+                    x.Category!.UserId == userId || x.UserId == userId)
                 ?? throw new KeyNotFoundException($"Todo with ID {id} not found.");
 
             entity.IsCompleted = !entity.IsCompleted;
@@ -156,7 +159,7 @@ namespace ToDoApp_BackEnd.Services
                 .Include(x => x.Category)
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&
-                    x.Category.UserId == userId);
+                    x.Category!.UserId == userId || x.UserId==userId);
 
             if (entity == null)
                 return false;

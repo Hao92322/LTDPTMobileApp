@@ -28,8 +28,12 @@ namespace ToDoApp_BackEnd.Models
         // Thời điểm tạo (để sắp xếp theo ngày)
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         [Required]
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; } // vì todo có thể ko cần todo vẫn tồn tại dựa trên user 
         [ForeignKey(nameof(CategoryId))]
-        public Category Category { get; set; }
+        public Category? Category { get; set; }
+        
+        public string UserId { get; set; }
+        [ForeignKey(nameof(UserId))]
+        public User User { get; set; }
     }
 }

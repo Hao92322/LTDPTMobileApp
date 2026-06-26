@@ -23,27 +23,27 @@ namespace ToDoApp_BackEnd.Services
         }
 
 
-        private string GenerateJwtToken(IdentityUser user)
+        private string GenerateJwtToken(User user)
         {
             var jwtSettings = _config.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"]!;
             var expiryMinutes = int.Parse(jwtSettings["ExpiryMinutes"]!);
 
-            var claims = new[]
+            var claims = new[] // payload 
             {
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Email,          user.Email!),
             new Claim(ClaimTypes.Name,           user.UserName!)
         };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)); // câps cho chia khoa 
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)); // câps cho chia khoa sercet key 
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256); // auto create header 
 
             var token = new JwtSecurityToken(
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+                expires: DateTime.UtcNow.AddMinutes(expiryMinutes), // thoi han 
                 signingCredentials: creds
             );
 
