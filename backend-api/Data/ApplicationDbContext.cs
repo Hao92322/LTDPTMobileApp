@@ -1,6 +1,7 @@
 ﻿using ToDoApp_BackEnd.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace ToDoApp_BackEnd.Data
 {
@@ -8,17 +9,27 @@ namespace ToDoApp_BackEnd.Data
     {
         // constructor
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> option) : base(option) { }
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                // chuỗi kết nối này giống hệt trong file appsettings.json 
-                optionsBuilder.UseSqlServer("Server=.\\SQLEXPRESS;Database=TodoDb;Trusted_Connection=True;TrustServerCertificate=True;");
-            }
-        }
+        
         //public DbSet<User> Users { get; set; } identity auto quan ly 
         public DbSet<Category> Categories { get; set; }
         public DbSet<TodoItem> TodoItems { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);  // use for idnetity auto configution 
+
+            modelBuilder.Entity<TodoItem>().
+                HasOne(t => t.User).
+                WithMany(u => u.TodoItems).
+                HasForeignKey(t => t.UserId).
+                OnDelete(DeleteBehavior.Restrict);
+            // cau hinh quan he cate va todo 
+            modelBuilder.Entity<TodoItem>()
+                .HasOne(t => t.Category).
+                WithMany(c => c.TodoItems).
+                HasForeignKey(t => t.CategoryId).
+                OnDelete(DeleteBehavior.Cascade);
+
+        }
 
     }
 }

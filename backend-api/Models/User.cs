@@ -7,6 +7,7 @@ namespace ToDoApp_BackEnd.Models
         public string? AvartarUrl { get; set; }
         public DateTime CreateAt { get; set; }
         public ICollection<Category>?Categories { get; set; }    
+        public ICollection<TodoItem>? TodoItems { get; set; }
 
 
     }

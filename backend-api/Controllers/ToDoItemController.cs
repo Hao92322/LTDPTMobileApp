@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
-using Microsoft.Extensions.Validation;
+//using Microsoft.Extensions.Validation;
 using System.Security.Claims;
 using ToDoApp_BackEnd.DTOs;
 using ToDoApp_BackEnd.Services.Interface;
