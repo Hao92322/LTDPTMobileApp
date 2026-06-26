@@ -97,14 +97,11 @@ namespace ToDoApp_BackEnd
                 //app.MapOpenApi(); //
                 app.UseSwagger();
                 app.UseSwaggerUI(); // Nó tự động map vào đường dẫn /swagger/index.html
-
             }
 
-            app.UseHttpsRedirection(); // kiem tra dang nhap chua -> Create Oject 
+            //app.UseHttpsRedirection(); // kiem tra dang nhap chua -> Create Oject 
             app.UseAuthentication();   // 🔴 PHẢI có
             app.UseAuthorization();// roi moi phan quyen-> wwho arre u 
-
-            
             app.MapControllers();
 
             app.Run();
