@@ -92,12 +92,11 @@ namespace ToDoApp_BackEnd
 
             app.UseCors("AllowAll"); // Cho phép mọi yêu cầu từ bất cứ đâu trong môi trường dev
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
+           
                 //app.MapOpenApi(); //
                 app.UseSwagger();
                 app.UseSwaggerUI(); // Nó tự động map vào đường dẫn /swagger/index.html
-            }
+            
 
             //app.UseHttpsRedirection(); // kiem tra dang nhap chua -> Create Oject 
             app.UseAuthentication();   // 🔴 PHẢI có
