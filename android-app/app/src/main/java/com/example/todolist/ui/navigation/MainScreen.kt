@@ -16,15 +16,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.todolist.ui.category.CategoryManageScreen
 import com.example.todolist.ui.home.HomeScreen
-
-// These colors are copied from Home.kt. In a real app, these should be in a Theme.
-private val BackgroundCream = Color(0xFFF7EFE6)
-private val SurfaceWhite = Color(0xFFFFFFFF)
-private val TextMuted = Color(0xFF9C8C7E)
-private val AccentTerracotta = Color(0xFFB5611E)
-private val AccentTerracottaDeep = Color(0xFF7A3E10)
+import com.example.todolist.ui.theme.*
+import com.example.todolist.ui.todo.CreateTodoScreen
 data class NavItem(val icon: ImageVector, val label: String)
 val navItems = listOf(
     NavItem(Icons.Filled.Home, "Home"),
@@ -36,18 +33,32 @@ val navItems = listOf(
 @Composable
 fun MainScreen() {
     var selectedNav by remember { mutableIntStateOf(0) }
-    Scaffold(
-        containerColor = BackgroundCream,
-        bottomBar = {
-            CurvedBottomNav(
-                selectedIndex = selectedNav,
-                onSelect = { selectedNav = it },
-                onAddClick = { }
-            )
+    var showCreateTodo by remember { mutableStateOf(false) }
+    if (showCreateTodo) {
+        CreateTodoScreen(
+            onBack = { showCreateTodo = false },
+            onSave = {
+                showCreateTodo = false 
+            }
+        )
+    } else {
+        Scaffold(
+            containerColor = BackgroundCream,
+            bottomBar = {
+                CurvedBottomNav(
+                    selectedIndex = selectedNav,
+                    onSelect = { selectedNav = it },
+                    onAddClick = { showCreateTodo = true }
+                )
+            }
+        ) { innerPadding ->
+            when (selectedNav) {
+                0 -> HomeScreen(innerPadding = innerPadding)
+                1 -> CategoryManageScreen()
+                3 -> Box(Modifier.padding(innerPadding).fillMaxSize(), contentAlignment = Alignment.Center) { Text("Insights") }
+                4 -> Box(Modifier.padding(innerPadding).fillMaxSize(), contentAlignment = Alignment.Center) { Text("Profile") }
+            }
         }
-    ) { innerPadding ->
-        // For now, we only have one screen (Home)
-        HomeScreen(innerPadding = innerPadding)
     }
 }
 @Composable
@@ -131,3 +142,11 @@ private fun NavIconButton(item: NavItem, selected: Boolean, onClick: () -> Unit)
         )
     }
 }
+@Preview(showBackground = true, widthDp = 360, heightDp = 760)
+@Composable
+private fun MorningRoutineScreenPreview() {
+    MaterialTheme {
+        MainScreen()
+    }
+}
+

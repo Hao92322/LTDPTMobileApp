@@ -1,32 +1,34 @@
 package com.example.todolist.ui.home
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
-import com.example.todolist.ui.theme.*
+import com.example.todolist.data.repository.MockTodoRepositoryImpl
+import com.example.todolist.data.repository.TodoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-class HomeViewModel : ViewModel() {
-
-    private val sampleTasks = listOf(
-        HomeUiState("Uống Nước Sông", "Streak 3 ngày", "5 phút", Icons.Filled.LocalDrink, SandBg, 3, true, "Morning Routine"),
-        HomeUiState("Thiền tích nội công", "Streak 6 ngày", "15 phút", Icons.Filled.SelfImprovement, MintBg, 6, true, "Morning Routine"),
-        HomeUiState("Check Email", "Review inbox", "10 phút", Icons.Filled.Email, SkyBg, 0, false, "Work"),
-        HomeUiState("Team Meeting", "Weekly sync", "45 phút", Icons.Filled.Groups, LavenderBg, 0, false, "Work"),
-        HomeUiState("Dãn cơ", "Streak 5 ngày", "10 phút", Icons.Filled.Accessibility, LavenderBg, 5, false, "Personal"),
-        HomeUiState("Đi Bộ", "Streak 3 ngày", "20 phút", Icons.AutoMirrored.Filled.DirectionsWalk, SkyBg, 3, false, "Personal"),
-    )
-    private val _todoList = MutableStateFlow<List<HomeUiState>>(sampleTasks)
+class HomeViewModel(
+    private val repository: TodoRepository = MockTodoRepositoryImpl()
+) : ViewModel() {
+    private val _todoList = MutableStateFlow<List<HomeUiState>>(emptyList())
     val todoList = _todoList.asStateFlow()
+
+    init {
+        // Use toList() to ensure we have a static snapshot, not a reference to a mutable list
+        _todoList.value = repository.getTodos().toList()
+    }
+
     fun toggleTodoStatus(index: Int) {
-        _todoList.value = _todoList.value.mapIndexed { i, task ->
-            if (i == index)
-                task.copy(isDone = !task.isDone)
-            else
-                task
-        }
+        repository.toggleStatus(index)
+        // Refresh the flow with the latest data from the repository
+        _todoList.value = repository.getTodos().toList()
+    }
+
+    fun updateTodo(index: Int, task: HomeUiState) {
+        repository.updateTask(index, task)
+        _todoList.value = repository.getTodos().toList()
+    }
+
+    fun deleteTodo(index: Int) {
+        repository.deleteTask(index)
+        _todoList.value = repository.getTodos().toList()
     }
 }
