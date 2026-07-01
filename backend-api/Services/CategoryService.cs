@@ -27,7 +27,7 @@ namespace ToDoApp_BackEnd.Services
          int pageSize = 20,
          string? search = null)
         {
-            var query = _context.Categories
+            var query = _context.Categories.Include(x=>x.TodoItems)
                 .Where(x => x.UserId == userId);
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -54,7 +54,7 @@ namespace ToDoApp_BackEnd.Services
         }
         public async Task<CategoryDTO> FindCategoryById(int id,string userid)
         {
-            var entity = await _context.Categories.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userid)
+            var entity = await _context.Categories.Include(x=>x.TodoItems).FirstOrDefaultAsync(x => x.Id == id && x.UserId == userid)
                 ?? throw new KeyNotFoundException($"Category with ID {id} not found.");
 
             return MapToDTO(entity);

@@ -9,6 +9,6 @@
         public bool IsCompleted { get; set; }
         public DateTime? DueDate { get; set; }
         public int Priority { get; set; }
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; } // ko cần cate vẫn có todo base on User 
     }
 }
