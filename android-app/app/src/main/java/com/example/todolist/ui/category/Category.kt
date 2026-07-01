@@ -1,14 +1,4 @@
 package com.example.todolist.ui.category
-/*
- * Compose "Manage Categories" screen — same cream/terracotta style as
- * MorningRoutineScreen.kt and AddTodoScreen.kt. Reuses the public
- * `RoutineTask` data class from MorningRoutineScreen.kt, so keep this file
- * in the same package as that one.
- *
- * Needs: material3 + material-icons-extended (for LocalDrink,
- * SelfImprovement, Accessibility, DirectionsWalk, DeleteOutline, SearchOff).
- */
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -21,13 +11,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -39,36 +29,30 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.todolist.ui.component.SearchRowCategory
 import com.example.todolist.ui.home.HomeUiState
 import com.example.todolist.ui.theme.*
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-// ----------------------------------------------------------------------------
-// Data
-// ----------------------------------------------------------------------------
 data class CategoryUi(
     val id: String,
     val name: String,
-    val color: Color,
-    val icon: ImageVector,
     val todos: List<HomeUiState>
 )
 
 @Composable
 fun CategoryManageScreen(
-    categories: List<CategoryUi> = remember { emptyList()},
-    onBack: () -> Unit = {},
-    onCreateCategory: () -> Unit = {},
-    onRenameCategory: (CategoryUi, String) -> Unit = { _, _ -> },
-    onDeleteCategory: (CategoryUi) -> Unit = {}
+    onBack: () -> Unit = {}
 ) {
+    var categoriesState by remember { mutableStateOf(MockCategories) }
     var query by remember { mutableStateOf("") }
     var expandedIds by remember { mutableStateOf(setOf<String>()) }
     var pendingDelete by remember { mutableStateOf<CategoryUi?>(null) }
-
-    val filtered = remember(categories, query) {
-        if (query.isBlank()) categories
-        else categories.filter { cat ->
+    var showCreateDialog by remember { mutableStateOf(false) }
+    val filtered = remember(categoriesState, query) {
+        if (query.isBlank()) categoriesState
+        else categoriesState.filter { cat ->
             cat.name.contains(query, ignoreCase = true) ||
                     cat.todos.any { it.title.contains(query, ignoreCase = true) }
         }
@@ -82,7 +66,11 @@ fun CategoryManageScreen(
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(Modifier.height(4.dp))
-            SearchRow(query = query, onQueryChange = { query = it }, onCreateClick = onCreateCategory)
+            SearchRowCategory(
+                query = query,
+                onQueryChange = { query = it },
+                onCreateClick = { showCreateDialog = true }
+            )
             Spacer(Modifier.height(18.dp))
 
             if (filtered.isEmpty()) {
@@ -100,7 +88,11 @@ fun CategoryManageScreen(
                                 expandedIds = if (expandedIds.contains(category.id))
                                     expandedIds - category.id else expandedIds + category.id
                             },
-                            onRename = { newName -> onRenameCategory(category, newName) },
+                            onRename = { newName ->
+                                categoriesState = categoriesState.map {
+                                    if (it.id == category.id) it.copy(name = newName) else it
+                                }
+                            },
                             onDeleteRequest = { pendingDelete = category }
                         )
                     }
@@ -109,18 +101,33 @@ fun CategoryManageScreen(
         }
     }
 
+    if (showCreateDialog) {
+        CreateCategoryDialog(
+            onConfirm = { name ->
+                val newCategory = CategoryUi(
+                    id = java.util.UUID.randomUUID().toString(),
+                    name = name,
+                    todos = emptyList()
+                )
+                categoriesState = categoriesState + newCategory
+                showCreateDialog = false
+            },
+            onDismiss = { showCreateDialog = false }
+        )
+    }
+
     pendingDelete?.let { target ->
         DeleteConfirmDialog(
             categoryName = target.name,
-            onConfirm = { onDeleteCategory(target); pendingDelete = null },
+            onConfirm = {
+                categoriesState = categoriesState.filter { it.id != target.id }
+                pendingDelete = null
+            },
             onDismiss = { pendingDelete = null }
         )
     }
 }
 
-// ----------------------------------------------------------------------------
-// Top bar
-// ----------------------------------------------------------------------------
 @Composable
 private fun ManageTopBar(onBack: () -> Unit) {
     Row(
@@ -138,7 +145,7 @@ private fun ManageTopBar(onBack: () -> Unit) {
                 .clickable { onBack() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = InkBrown, modifier = Modifier.size(18.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = InkBrown, modifier = Modifier.size(18.dp))
         }
         Text(
             text = "Manage Categories",
@@ -151,50 +158,6 @@ private fun ManageTopBar(onBack: () -> Unit) {
         Spacer(Modifier.size(40.dp))
     }
 }
-
-// ----------------------------------------------------------------------------
-// Search row with inline create button
-// ----------------------------------------------------------------------------
-@Composable
-private fun SearchRow(query: String, onQueryChange: (String) -> Unit, onCreateClick: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        TextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier
-                .weight(1f)
-                .border(1.dp, InputBorder, RoundedCornerShape(16.dp)),
-            placeholder = { Text("Search categories or todos", color = TextMuted, fontSize = 14.sp) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
-            textStyle = TextStyle(fontSize = 14.sp, color = InkBrown),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = SurfaceWhite,
-                unfocusedContainerColor = SurfaceWhite,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = AccentTerracotta
-            )
-        )
-
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(AccentTerracotta, AccentTerracottaDeep)))
-                .clickable { onCreateClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Create category", tint = SurfaceWhite)
-        }
-    }
-}
-
-// ----------------------------------------------------------------------------
-// Category card — header (color tile, name, edit/delete, expand chevron)
-// plus an animated list of that category's todos.
-// ----------------------------------------------------------------------------
 @Composable
 private fun CategoryCard(
     category: CategoryUi,
@@ -225,10 +188,10 @@ private fun CategoryCard(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(category.color),
+                        .background(SurfaceWhite),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(category.icon, contentDescription = null, tint = InkBrown, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Filled.Addchart, contentDescription = null, tint = InkBrown, modifier = Modifier.size(22.dp))
                 }
 
                 Spacer(Modifier.width(12.dp))
@@ -351,9 +314,6 @@ private fun MiniTodoRow(todo: HomeUiState) {
     }
 }
 
-// ----------------------------------------------------------------------------
-// Delete confirmation
-// ----------------------------------------------------------------------------
 @Composable
 private fun DeleteConfirmDialog(categoryName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
@@ -381,9 +341,6 @@ private fun DeleteConfirmDialog(categoryName: String, onConfirm: () -> Unit, onD
     )
 }
 
-// ----------------------------------------------------------------------------
-// Empty state
-// ----------------------------------------------------------------------------
 @Composable
 private fun EmptyState(query: String) {
     Column(
@@ -402,9 +359,63 @@ private fun EmptyState(query: String) {
     }
 }
 
-// ----------------------------------------------------------------------------
-// Preview
-// ----------------------------------------------------------------------------
+@Composable
+private fun CreateCategoryDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var categoryName by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceWhite,
+        shape = RoundedCornerShape(20.dp),
+        title = { Text("New Category", fontWeight = FontWeight.Bold, color = InkBrown) },
+        text = {
+            Column {
+                Text("Enter category name:", color = TextMuted, fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+                TextField(
+                    value = categoryName,
+                    onValueChange = { categoryName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("e.g. Shopping", color = TextMuted) },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = BackgroundCream,
+                        unfocusedContainerColor = BackgroundCream,
+                        focusedIndicatorColor = AccentTerracotta,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (categoryName.isNotBlank()) onConfirm(categoryName) },
+                enabled = categoryName.isNotBlank()
+            ) {
+                Text("Create", color = AccentTerracotta, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextMuted)
+            }
+        }
+    )
+}
+
+private val MockCategories = listOf(
+    CategoryUi("1", "Work", listOf(
+        HomeUiState("Meeting with team", "Discuss project progress", LocalDateTime.now(), LocalDateTime.now().plusHours(1), 2, false, "Work"),
+        HomeUiState("Email clients", "Send updates", LocalDateTime.now(), LocalDateTime.now().plusHours(2), 1, true, "Work")
+    )),
+    CategoryUi("2", "Personal", listOf(
+        HomeUiState("Buy groceries", "At the supermarket", LocalDateTime.now(), LocalDateTime.now().plusHours(3), 0, false, "Personal")
+    )),
+    CategoryUi("3", "Fitness", emptyList())
+)
+
 @Preview(showBackground = true, widthDp = 360, heightDp = 760)
 @Composable
 private fun CategoryManageScreenPreview() {

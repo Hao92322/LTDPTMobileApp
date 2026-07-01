@@ -1,5 +1,6 @@
 package com.example.todolist.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,8 +19,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.todolist.ui.auth.AuthScreen
 import com.example.todolist.ui.category.CategoryManageScreen
 import com.example.todolist.ui.home.HomeScreen
+import com.example.todolist.ui.profile.ProfileScreen
 import com.example.todolist.ui.theme.*
 import com.example.todolist.ui.todo.CreateTodoScreen
 data class NavItem(val icon: ImageVector, val label: String)
@@ -32,9 +35,24 @@ val navItems = listOf(
 )
 @Composable
 fun MainScreen() {
+    var isAuthenticated by remember { mutableStateOf(false) }
     var selectedNav by remember { mutableIntStateOf(0) }
     var showCreateTodo by remember { mutableStateOf(false) }
-    if (showCreateTodo) {
+
+    BackHandler(enabled = isAuthenticated && (selectedNav != 0 || showCreateTodo)) {
+        if (showCreateTodo) {
+            showCreateTodo = false
+        } else {
+            selectedNav = 0
+        }
+    }
+
+    if (!isAuthenticated) {
+        AuthScreen(
+            onLogin = { _, _ -> isAuthenticated = true },
+            onRegister = { _, _, _ -> isAuthenticated = true }
+        )
+    } else if (showCreateTodo) {
         CreateTodoScreen(
             onBack = { showCreateTodo = false },
             onSave = {
@@ -54,9 +72,9 @@ fun MainScreen() {
         ) { innerPadding ->
             when (selectedNav) {
                 0 -> HomeScreen(innerPadding = innerPadding)
-                1 -> CategoryManageScreen()
+                1 -> CategoryManageScreen(onBack = { selectedNav = 0 })
                 3 -> Box(Modifier.padding(innerPadding).fillMaxSize(), contentAlignment = Alignment.Center) { Text("Insights") }
-                4 -> Box(Modifier.padding(innerPadding).fillMaxSize(), contentAlignment = Alignment.Center) { Text("Profile") }
+                4 -> ProfileScreen(onLogout = { isAuthenticated = false })
             }
         }
     }

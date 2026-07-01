@@ -1,7 +1,5 @@
 package com.example.todolist.ui.home
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import java.time.LocalDateTime
 
 data class HomeUiState(

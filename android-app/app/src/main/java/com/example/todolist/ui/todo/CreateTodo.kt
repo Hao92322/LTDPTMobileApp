@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.CreationExtras
+import com.example.todolist.ui.component.BaseSearchBar
 import com.example.todolist.ui.theme.*
 import com.example.todolist.ui.home.HomeUiState
 import java.time.Instant
@@ -38,10 +41,6 @@ import java.time.format.DateTimeFormatter
 
 private data class TodoCategory(val id : Int,val label: String)
 
-private val categories = listOf(
-    TodoCategory(2,"Hydration"),
-    TodoCategory(1,"Hydration78")
-)
 
 // Mức độ ưu tiên: 0 = không quan trọng, 1 = cảnh báo, 2 = khẩn cấp
 private data class PriorityOption(val level: Int, val label: String, val color: Color)
@@ -59,14 +58,56 @@ fun CreateTodoScreen(
     onSave: (HomeUiState) -> Unit = {},
     innerPadding: PaddingValues = PaddingValues(0.dp)
 ) {
+    var categories = remember { mutableStateListOf(
+        TodoCategory(1,"Hydration"),
+        TodoCategory(2,"Hydration78")
+    )}
     var title by remember { mutableStateOf("") }
     var subtitle by remember { mutableStateOf("") }
     var duedate by remember { mutableStateOf(LocalDateTime.now()) }
-    var selectedCategory by remember { mutableStateOf(categories.first())}
+    var selectedCategory by remember { mutableStateOf<TodoCategory?>(null) }
     var selectedPriority by remember { mutableStateOf(0) }
     var titleError by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-
+    var categoriesFiltered = categories.filter { it.label.contains(searchQuery, ignoreCase = true) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var TitleNewCategory by remember { mutableStateOf("") }
+    if(showAddCategoryDialog){
+        Dialog(
+            onDismissRequest = { showAddCategoryDialog = false }
+        ) {
+            Card {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    TextField(
+                        value = TitleNewCategory,
+                        onValueChange = {TitleNewCategory = it},
+                        label = { Text("Tên danh mục") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                Row (modifier = Modifier.fillMaxWidth(),Arrangement.End){
+                    Button(
+                        onClick = {
+                            showAddCategoryDialog = false
+                        }
+                        ) {
+                            Text("Đóng")
+                        }
+                    Button(
+                        onClick = {
+                            categories.add(TodoCategory(categories.size+1,TitleNewCategory))
+                            showAddCategoryDialog = false
+                        }
+                        ) {
+                            Text("Tạo Danh Mục")
+                        }
+                    }
+                }
+            }
+        }
+    }
     Scaffold(
         containerColor = BackgroundCream,
         topBar = { AddTodoTopBar(onBack = onBack) },
@@ -134,9 +175,12 @@ fun CreateTodoScreen(
                     onSelect = { selectedPriority = it }
                 )
             }
-            SearchBar(searchQuery, onSearchQueryChange = {
-                searchQuery = it
-            })
+            SearchBar(searchQuery,
+                onSearchQueryChange = {
+                searchQuery = it},
+                onClickAddCategory = {
+                    showAddCategoryDialog = true
+                })
             Column(modifier = Modifier.fillMaxSize()) {
                 Text("Category", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = InkBrown)
                 Spacer(Modifier.height(10.dp))
@@ -144,16 +188,20 @@ fun CreateTodoScreen(
                     modifier = Modifier.height(300.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(categories) { category ->
+                    items(categoriesFiltered) { category ->
                         CategoryChip(
                             category = category,
                             selected = category == selectedCategory,
-                            onClick = { selectedCategory = category }
+                            onClick = {
+                                if(selectedCategory == category)
+                                    selectedCategory = null
+                                else
+                                    selectedCategory = category
+                            }
                         )
                     }
                 }
             }
-            // bottom spacing so the last row isn't flush against the save bar
             Spacer(Modifier.height(4.dp))
         }
     }
@@ -162,38 +210,17 @@ fun CreateTodoScreen(
 private fun SearchBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
+    onClickAddCategory: () -> Unit
 ) {
     Row (modifier = Modifier.fillMaxWidth().height(55.dp)){
         Column {
-            TextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
+            BaseSearchBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth(0.85f)
                     .clip(RoundedCornerShape(16.dp))
                     .background(SurfaceWhite),
-                placeholder = { Text("Tìm kiếm danh mục...", color = TextMuted) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        tint = InkBrown
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Close, contentDescription = null, tint = InkBrown)
-                        }
-                    }
-                },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = SurfaceWhite,
-                    unfocusedContainerColor = SurfaceWhite,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                singleLine = true
+                placeholderText = "Tìm kiếm danh mục ..."
             )
         }
         Box (
@@ -203,7 +230,8 @@ private fun SearchBar(
                     width = 2.dp,
                     color = Color.Black,
                     shape = RoundedCornerShape(16.dp)
-                ),
+                )
+                .clickable {onClickAddCategory()},
             contentAlignment = Alignment.Center
         )
         {
@@ -526,8 +554,8 @@ private fun CategoryChip(category: TodoCategory, selected: Boolean, onClick: () 
                 color = Color.Black,
                 shape = RoundedCornerShape(20.dp)
             )
-            .padding(horizontal = 14.dp, vertical = 10.dp)
             .clickable{ onClick() }
+            .height(40.dp)
     ) {
         Spacer(Modifier.width(8.dp))
         Text(category.label, fontSize = 13.sp, color = if(selected) Color.White else InkBrown, fontWeight = FontWeight.Bold)

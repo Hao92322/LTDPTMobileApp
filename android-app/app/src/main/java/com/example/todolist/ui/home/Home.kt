@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.ui.component.BaseSearchBar
 import com.example.todolist.ui.theme.*
 import java.time.Instant
 import java.time.LocalDate
@@ -89,6 +89,7 @@ private fun HomeContent(
     val filteredTasks = remember(tasks, selectedDay, searchQuery, selectedCategoryFilter) {
         tasks.filter { task ->
             val matchesDay = task.duedate.dayOfMonth == selectedDay
+            //Lay ra nhung cai task co bao gom cac ky tu trong searchQuery khong phan biet chu hoa chu thuong
             val matchesQuery = task.title.contains(searchQuery, ignoreCase = true)
             val matchesCategory = selectedCategoryFilter == "All" || task.category == selectedCategoryFilter
             matchesDay && matchesQuery && matchesCategory
@@ -190,29 +191,13 @@ private fun SearchBar(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Search Bar
-        TextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
+        BaseSearchBar(
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange,
+            modifier = Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceWhite),
-            placeholder = { Text("Tìm kiếm công việc...", color = TextMuted) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = InkBrown) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(Icons.Default.Close, contentDescription = null, tint = InkBrown)
-                    }
-                }
-            },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = SurfaceWhite,
-                unfocusedContainerColor = SurfaceWhite,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
-            singleLine = true
+            placeholderText = "Tìm kiếm việc cần làm ..."
         )
 
         // Category Chips
