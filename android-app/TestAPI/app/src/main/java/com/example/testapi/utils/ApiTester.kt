@@ -186,12 +186,17 @@ class ApiTester(private val context: Context) {
 
             val token = TokenManager.getAccessToken(context) ?: return
 
+            //Thêm field Date (format: yyyy-MM-dd)
+            val currentDate = java.time.LocalDate.now().toString() // "2026-06-24"
+
             val request = TodoItemRequest(
                 title = "Test Todo - ${System.currentTimeMillis()}",
                 description = "Full CRUD verification",
                 dueDate = null,
                 priority = 1,
-                categoryId = testCategoryId
+                categoryId = testCategoryId,
+                date = currentDate,
+                isCompleted = false
             )
 
             val response = apiService.createTodoItem(request, "Bearer $token")
@@ -199,12 +204,36 @@ class ApiTester(private val context: Context) {
             if (response.isSuccessful && response.body()?.success == true) {
                 testTodoId = response.body()!!.data?.id ?: 0
                 Log.d(TAG, "✅ CREATE TODO ITEM SUCCESS (200 OK) | ID: $testTodoId")
-                testDeleteTodoItem()
+
+                // ✅ MỚI: Test Toggle Complete (nếu muốn)
+                testToggleComplete()
             } else {
                 Log.e(TAG, "❌ CREATE TODO ITEM FAILED: ${response.code()}")
+                Log.e(TAG, "Error: ${response.errorBody()?.string()}")
             }
         } catch (e: Exception) {
             Log.e(TAG, "❌ ERROR: ${e.message}")
+        }
+    }
+
+    // ✅ MỚI: Test Toggle Complete
+    private suspend fun testToggleComplete() {
+        if (testTodoId == 0) return
+        try {
+            Log.d(TAG, "\n🔄 TEST TOGGLE COMPLETE ($testTodoId)")
+
+            val token = TokenManager.getAccessToken(context) ?: return
+
+            val response = apiService.toggleComplete(testTodoId, "Bearer $token")
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                Log.d(TAG, "✅ TOGGLE COMPLETE SUCCESS (200 OK)")
+                testDeleteTodoItem()
+            } else {
+                Log.e(TAG, "❌ TOGGLE COMPLETE FAILED: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ TOGGLE COMPLETE ERROR: ${e.message}")
         }
     }
 

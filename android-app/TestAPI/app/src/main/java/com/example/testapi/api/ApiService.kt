@@ -82,4 +82,10 @@ interface ApiService {
         @Path("id") id: Int,
         @Header("Authorization") token: String
     ): Response<Void>
+
+    @PATCH("api/todoitem/{id}/toggle")
+    suspend fun toggleComplete(
+        @Path("id") id: Int,
+        @Header("Authorization") token: String
+    ): Response<ApiResponse<TodoItem>>
 }
