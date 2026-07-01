@@ -3,6 +3,7 @@ package com.example.todolist.ui.home
 import java.time.LocalDateTime
 
 data class HomeUiState(
+    val id: Int = 0,
     val title: String,
     val subtitle: String,
     val createdate: LocalDateTime,

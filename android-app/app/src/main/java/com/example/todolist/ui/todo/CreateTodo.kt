@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -29,33 +28,31 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.ui.component.BaseSearchBar
 import com.example.todolist.ui.LocalAppState
-import com.example.todolist.ui.theme.*
+import com.example.todolist.ui.home.HomeViewModel
 import com.example.todolist.ui.home.HomeUiState
+import com.example.todolist.ui.theme.*
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private data class TodoCategory(val id : Int,val label: String)
-
-
-// Mức độ ưu tiên: 0 = không quan trọng, 1 = cảnh báo, 2 = khẩn cấp
+private data class TodoCategory(val id: Int, val label: String)
 private data class PriorityOption(val level: Int, val label: String, val color: Color)
 
 private val priorityOptions = listOf(
-    PriorityOption(0, "Không quan trọng", Color(0xFF7C9A6D)), // cờ xanh
-    PriorityOption(1, "Cảnh báo", Color(0xFFD9A441)),          // cờ vàng
-    PriorityOption(2, "Khẩn cấp", Color(0xFFC1543F))           // cờ đỏ
+    PriorityOption(0, "Không quan trọng", Color(0xFF7C9A6D)),
+    PriorityOption(1, "Cảnh báo", Color(0xFFD9A441)),
+    PriorityOption(2, "Khẩn cấp", Color(0xFFC1543F))
 )
 
-// Screen
 @Composable
 fun CreateTodoScreen(
     onBack: () -> Unit = {},
-    onSave: (HomeUiState) -> Unit = {},
+    homeViewModel: HomeViewModel = viewModel(), // ✅ Tích hợp HomeViewModel
     innerPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val appState = LocalAppState.current
@@ -65,36 +62,34 @@ fun CreateTodoScreen(
     val cardColor = if (isDark) Color(0xFF2C1F14) else SurfaceWhite
     val textColor = if (isDark) Color(0xFFF5E6D3) else InkBrown
 
-    var categories = remember(lang) { mutableStateListOf(
-        TodoCategory(1, if (lang == "vi") "Bổ sung nước" else "Hydration"),
-        TodoCategory(2, if (lang == "vi") "Tập thể dục" else "Fitness")
-    )}
+    var categories = remember(lang) {
+        mutableStateListOf(
+            TodoCategory(1, if (lang == "vi") "Bổ sung nước" else "Hydration"),
+            TodoCategory(2, if (lang == "vi") "Tập thể dục" else "Fitness")
+        )
+    }
     var title by remember { mutableStateOf("") }
     var subtitle by remember { mutableStateOf("") }
     var duedate by remember { mutableStateOf(LocalDateTime.now()) }
     var selectedCategory by remember { mutableStateOf<TodoCategory?>(null) }
-    var selectedPriority by remember { mutableStateOf(0) }
+    var selectedPriority by remember { mutableIntStateOf(0) }
     var titleError by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    var categoriesFiltered = categories.filter { it.label.contains(searchQuery, ignoreCase = true) }
+    val categoriesFiltered = categories.filter { it.label.contains(searchQuery, ignoreCase = true) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
-    var TitleNewCategory by remember { mutableStateOf("") }
+    var titleNewCategory by remember { mutableStateOf("") }
 
     val labelNewCategory = if (lang == "vi") "Tên danh mục" else "Category name"
     val labelClose = if (lang == "vi") "Đóng" else "Close"
     val labelCreate = if (lang == "vi") "Tạo Danh Mục" else "Create Category"
 
-    if(showAddCategoryDialog){
-        Dialog(
-            onDismissRequest = { showAddCategoryDialog = false }
-        ) {
+    if (showAddCategoryDialog) {
+        Dialog(onDismissRequest = { showAddCategoryDialog = false }) {
             Card(colors = CardDefaults.cardColors(containerColor = cardColor)) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     TextField(
-                        value = TitleNewCategory,
-                        onValueChange = {TitleNewCategory = it},
+                        value = titleNewCategory,
+                        onValueChange = { titleNewCategory = it },
                         label = { Text(labelNewCategory, color = textColor) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(
@@ -105,28 +100,22 @@ fun CreateTodoScreen(
                         )
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                Row (modifier = Modifier.fillMaxWidth(),Arrangement.End){
-                    Button(
-                        onClick = {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Button(onClick = { showAddCategoryDialog = false }) { Text(labelClose) }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(onClick = {
+                            if (titleNewCategory.isNotBlank()) {
+                                categories.add(TodoCategory(categories.size + 1, titleNewCategory))
+                                titleNewCategory = ""
+                            }
                             showAddCategoryDialog = false
-                        }
-                        ) {
-                            Text(labelClose)
-                        }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            categories.add(TodoCategory(categories.size+1,TitleNewCategory))
-                            showAddCategoryDialog = false
-                        }
-                        ) {
-                            Text(labelCreate)
-                        }
+                        }) { Text(labelCreate) }
                     }
                 }
             }
         }
     }
+
     Scaffold(
         containerColor = bgColor,
         topBar = { AddTodoTopBar(onBack = onBack, isDark = isDark, lang = lang) },
@@ -137,16 +126,21 @@ fun CreateTodoScreen(
                         titleError = true
                     } else {
                         titleError = false
-                        onSave(
-                            HomeUiState(
-                                title = title,
-                                subtitle = subtitle,
-                                createdate = LocalDateTime.now(),
-                                duedate = duedate,
-                                priority = selectedPriority,
-                                isDone = false
-                            )
+
+                        // ✅ GỌI API TẠO TODO
+                        val newTask = HomeUiState(
+                            id = 0,
+                            title = title,
+                            subtitle = subtitle,
+                            createdate = LocalDateTime.now(),
+                            duedate = duedate,
+                            priority = selectedPriority,
+                            isDone = false,
+                            category = selectedCategory?.label ?: "Default"
                         )
+                        homeViewModel.addTodo(newTask)
+
+                        onBack() // Quay lại màn hình Home
                     }
                 },
                 isDark = isDark,
@@ -212,17 +206,18 @@ fun CreateTodoScreen(
                     lang = lang
                 )
             }
-            SearchBar(searchQuery,
-                onSearchQueryChange = {
-                searchQuery = it},
-                onClickAddCategory = {
-                    showAddCategoryDialog = true
-                },
+
+            // ✅ ĐÃ ĐỔI TÊN THÀNH CategorySearchBar ĐỂ TRÁNH XUNG ĐỘT VỚI MATERIAL3
+            CategorySearchBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                onClickAddCategory = { showAddCategoryDialog = true },
                 cardColor = cardColor,
                 lang = lang
             )
+
             val labelCategory = if (lang == "vi") "Danh mục" else "Category"
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(labelCategory, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = textColor)
                 Spacer(Modifier.height(10.dp))
                 LazyColumn(
@@ -234,10 +229,8 @@ fun CreateTodoScreen(
                             category = category,
                             selected = category == selectedCategory,
                             onClick = {
-                                if(selectedCategory == category)
-                                    selectedCategory = null
-                                else
-                                    selectedCategory = category
+                                if (selectedCategory == category) selectedCategory = null
+                                else selectedCategory = category
                             },
                             cardColor = cardColor,
                             textColor = textColor
@@ -249,8 +242,10 @@ fun CreateTodoScreen(
         }
     }
 }
+
+// ✅ ĐÃ ĐỔI TÊN HÀM SEARCHBAR
 @Composable
-private fun SearchBar(
+private fun CategorySearchBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onClickAddCategory: () -> Unit,
@@ -286,7 +281,6 @@ private fun SearchBar(
     }
 }
 
-// Top bar
 @Composable
 private fun AddTodoTopBar(onBack: () -> Unit, isDark: Boolean = false, lang: String = "vi") {
     val bg = if (isDark) Color(0xFF1A120B) else BackgroundCream
@@ -328,7 +322,6 @@ private fun AddTodoTopBar(onBack: () -> Unit, isDark: Boolean = false, lang: Str
     }
 }
 
-// Fixed bottom save bar
 @Composable
 private fun SaveBar(onSave: () -> Unit, isDark: Boolean = false, lang: String = "vi") {
     val barBg = if (isDark) Color(0xFF2C1F14) else SurfaceWhite
@@ -358,7 +351,6 @@ private fun SaveBar(onSave: () -> Unit, isDark: Boolean = false, lang: String = 
     }
 }
 
-// Form pieces
 @Composable
 private fun LabeledField(
     label: String,
@@ -405,7 +397,6 @@ private fun RoundedTextField(
     )
 }
 
-// Due date + due time, side by side trên cùng 1 dòng, dùng chung 1 ô RoundedTextField-style
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DateDueRow(
@@ -419,37 +410,24 @@ private fun DateDueRow(
     var showTimePicker by remember { mutableStateOf(false) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-
     val cancelText = if (lang == "vi") "Hủy" else "Cancel"
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         PickerField(
-            icon = Icons.Filled.DateRange,
-            text = dateTime.format(dateFormatter),
-            modifier = Modifier.weight(1f),
-            onClick = { showDatePicker = true },
-            cardColor = cardColor,
-            textColor = textColor
+            icon = Icons.Filled.DateRange, text = dateTime.format(dateFormatter),
+            modifier = Modifier.weight(1f), onClick = { showDatePicker = true },
+            cardColor = cardColor, textColor = textColor
         )
         PickerField(
-            icon = Icons.Filled.AccessTime,
-            text = dateTime.format(timeFormatter),
-            modifier = Modifier.weight(1f),
-            onClick = { showTimePicker = true },
-            cardColor = cardColor,
-            textColor = textColor
+            icon = Icons.Filled.AccessTime, text = dateTime.format(timeFormatter),
+            modifier = Modifier.weight(1f), onClick = { showTimePicker = true },
+            cardColor = cardColor, textColor = textColor
         )
     }
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = dateTime
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli()
+            initialSelectedDateMillis = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -457,9 +435,7 @@ private fun DateDueRow(
                 TextButton(onClick = {
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
-                        val newDate = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
+                        val newDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
                         onDateTimeChange(dateTime.toLocalTime().atDate(newDate))
                     }
                     showDatePicker = false
@@ -468,18 +444,14 @@ private fun DateDueRow(
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text(cancelText, color = TextMuted) }
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        ) { DatePicker(state = datePickerState) }
     }
 
     if (showTimePicker) {
         val timePickerState = rememberTimePickerState(
-            initialHour = dateTime.hour,
-            initialMinute = dateTime.minute,
-            is24Hour = true
+            initialHour = dateTime.hour, initialMinute = dateTime.minute, is24Hour = true
         )
-        TimePickerDialog(
+        TimePickerDialogCustom(
             onDismissRequest = { showTimePicker = false },
             onConfirm = {
                 val newTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
@@ -487,21 +459,14 @@ private fun DateDueRow(
                 showTimePicker = false
             },
             lang = lang
-        ) {
-            TimePicker(state = timePickerState)
-        }
+        ) { TimePicker(state = timePickerState) }
     }
 }
 
-// Ô bấm để chọn ngày/giờ, đồng bộ style với RoundedTextField cho hợp tông
 @Composable
 private fun PickerField(
-    icon: ImageVector,
-    text: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    cardColor: Color = SurfaceWhite,
-    textColor: Color = InkBrown
+    icon: ImageVector, text: String, modifier: Modifier = Modifier,
+    onClick: () -> Unit, cardColor: Color = SurfaceWhite, textColor: Color = InkBrown
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -512,85 +477,46 @@ private fun PickerField(
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 14.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = AccentTerracotta,
-            modifier = Modifier.size(18.dp)
-        )
+        Icon(imageVector = icon, contentDescription = null, tint = AccentTerracotta, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
         Text(text, fontSize = 15.sp, color = textColor, fontWeight = FontWeight.Medium)
     }
 }
 
-// Dialog chọn giờ dạng Material3 TimePicker, bọc theme cho đồng bộ với app
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimePickerDialog(
-    onDismissRequest: () -> Unit,
-    onConfirm: () -> Unit,
-    lang: String = "vi",
-    content: @Composable () -> Unit
+private fun TimePickerDialogCustom(
+    onDismissRequest: () -> Unit, onConfirm: () -> Unit, lang: String = "vi", content: @Composable () -> Unit
 ) {
     val titleText = if (lang == "vi") "Chọn giờ" else "Select time"
     val cancelText = if (lang == "vi") "Hủy" else "Cancel"
     Dialog(onDismissRequest = onDismissRequest) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = SurfaceWhite
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    titleText,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = InkBrown,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
+        Surface(shape = RoundedCornerShape(24.dp), color = SurfaceWhite) {
+            Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(titleText, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = InkBrown, modifier = Modifier.padding(bottom = 12.dp))
                 content()
                 Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismissRequest) {
-                        Text(cancelText, color = TextMuted)
-                    }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismissRequest) { Text(cancelText, color = TextMuted) }
                     Spacer(Modifier.width(4.dp))
-                    TextButton(onClick = onConfirm) {
-                        Text("OK", color = AccentTerracotta, fontWeight = FontWeight.Bold)
-                    }
+                    TextButton(onClick = onConfirm) { Text("OK", color = AccentTerracotta, fontWeight = FontWeight.Bold) }
                 }
             }
         }
     }
 }
 
-// Bộ chọn mức độ ưu tiên: 0 = Không quan trọng (xanh), 1 = Cảnh báo (vàng), 2 = Khẩn cấp (đỏ)
 @Composable
 private fun PrioritySelector(
-    selected: Int,
-    onSelect: (Int) -> Unit,
-    cardColor: Color = SurfaceWhite,
-    textColor: Color = InkBrown,
-    lang: String = "vi"
+    selected: Int, onSelect: (Int) -> Unit, cardColor: Color = SurfaceWhite, textColor: Color = InkBrown, lang: String = "vi"
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         priorityOptions.forEach { option ->
             val isSelected = option.level == selected
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 90.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .weight(1f).heightIn(min = 90.dp).clip(RoundedCornerShape(16.dp))
                     .background(if (isSelected) option.color.copy(alpha = 0.16f) else cardColor)
                     .border(
                         width = if (isSelected) 1.5.dp else 1.dp,
@@ -600,26 +526,17 @@ private fun PrioritySelector(
                     .clickable { onSelect(option.level) }
                     .padding(vertical = 12.dp, horizontal = 6.dp)
             ) {
-                val optionLabel = when(option.level) {
-                    0 -> if(lang == "vi") "Không quan trọng" else "Low priority"
-                    1 -> if(lang == "vi") "Cảnh báo" else "Medium priority"
-                    else -> if(lang == "vi") "Khẩn cấp" else "High priority"
+                val optionLabel = when (option.level) {
+                    0 -> if (lang == "vi") "Không quan trọng" else "Low priority"
+                    1 -> if (lang == "vi") "Cảnh báo" else "Medium priority"
+                    else -> if (lang == "vi") "Khẩn cấp" else "High priority"
                 }
-                Icon(
-                    imageVector = Icons.Filled.Flag,
-                    contentDescription = optionLabel,
-                    tint = option.color,
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(imageVector = Icons.Filled.Flag, contentDescription = optionLabel, tint = option.color, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = optionLabel,
-                    fontSize = 11.sp,
+                    text = optionLabel, fontSize = 11.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = textColor,
-                    textAlign = TextAlign.Center,
-                    minLines = 2,
-                    maxLines = 2
+                    color = textColor, textAlign = TextAlign.Center, minLines = 2, maxLines = 2
                 )
             }
         }
@@ -628,42 +545,33 @@ private fun PrioritySelector(
 
 @Composable
 private fun CategoryChip(
-    category: TodoCategory,
-    selected: Boolean,
-    onClick: () -> Unit,
-    cardColor: Color = SurfaceWhite,
-    textColor: Color = InkBrown
+    category: TodoCategory, selected: Boolean, onClick: () -> Unit, cardColor: Color = SurfaceWhite, textColor: Color = InkBrown
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .fillMaxWidth().clip(RoundedCornerShape(20.dp))
             .background(if (selected) AccentTerracotta.copy(alpha = 0.15f) else cardColor)
             .border(
                 width = if (selected) 1.5.dp else 1.dp,
                 color = if (selected) AccentTerracotta else InputBorder,
                 shape = RoundedCornerShape(20.dp)
             )
-            .clickable { onClick() }
-            .height(48.dp)
-            .padding(horizontal = 14.dp)
+            .clickable { onClick() }.height(48.dp).padding(horizontal = 14.dp)
     ) {
         Icon(
-            imageVector = Icons.Filled.Circle,
-            contentDescription = null,
-            tint = if (selected) AccentTerracotta else InputBorder,
-            modifier = Modifier.size(8.dp)
+            imageVector = Icons.Filled.Circle, contentDescription = null,
+            tint = if (selected) AccentTerracotta else InputBorder, modifier = Modifier.size(8.dp)
         )
         Spacer(Modifier.width(10.dp))
         Text(
-            category.label,
-            fontSize = 13.sp,
+            category.label, fontSize = 13.sp,
             color = if (selected) AccentTerracottaDeep else textColor,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
         )
     }
 }
+
 @Preview(showBackground = true, widthDp = 360, heightDp = 760)
 @Composable
 private fun AddTodoScreenPreview() {

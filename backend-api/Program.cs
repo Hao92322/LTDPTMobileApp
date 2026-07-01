@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,34 +17,27 @@ namespace ToDoApp_BackEnd
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container. 
-            //cấu hình chạy test thử swager 
             builder.Services.AddControllers();
-            builder.Services.AddEndpointsApiExplorer(); // Bắt buộc phải có để Swagger hiểu API
+            builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", builder =>
-                    builder.AllowAnyOrigin()
-                           .AllowAnyMethod()
-                           .AllowAnyHeader());
+                options.AddPolicy("AllowAll", policy =>
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
             });
 
-            // 1. Cấu hình kết nối SQL Server (đọc từ appsettings.json)
-            //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            //builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            //    options.UseSqlServer(connectionString));
-            //cấu hình Mysql
+            // CẤU HÌNH MYSQL CHO AIVEN
+            // Sử dụng ServerVersion cố định thay vì AutoDetect để tránh lỗi khi EF Core Design-time tạo DbContext
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            var serverVersion = new MySqlServerVersion(new Version(8, 0, 36)); 
+
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        ServerVersion.AutoDetect(
-            builder.Configuration.GetConnectionString("DefaultConnection"))));
+                options.UseMySql(connectionString, serverVersion));
 
-
-            //Console.WriteLine("Chuỗi kết nối lấy được là: " + connectionString);
-
-         
-            //declare for Identity use whole project 
+            // Cấu hình Identity
             builder.Services.AddIdentity<User, IdentityRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -56,51 +48,42 @@ namespace ToDoApp_BackEnd
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
-            // JWT
+            // JWT Configuration
             var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"]?? throw new Exception("Missing JwtSettings:SecretKey");
+            var secretKey = jwtSettings["SecretKey"] ?? throw new Exception("Missing JwtSettings:SecretKey");
 
             builder.Services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme; // dung JWT de kiem tra danh tinh
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme; // neu ma doi api thi se ep no login 
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = true, // kiem tra xen dung token  my server create ko
-                    ValidateAudience = true, // kiem tra xe mdung app ko 
-                    ValidateLifetime = true, // check vong doi cua cookie 
-                    ValidateIssuerSigningKey = true, // check code token 
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                 };
             });
 
-            // dang ki pham vi service 
-
+            // Register Services
             builder.Services.AddScoped<ICategoryService, CategoryService>();
             builder.Services.AddScoped<IToDoItemService, ToDoItemService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
 
-
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            //builder.Services.AddOpenApi();
             var app = builder.Build();
 
-            app.UseCors("AllowAll"); // Cho phép mọi yêu cầu từ bất cứ đâu trong môi trường dev
-            // Configure the HTTP request pipeline.
-           
-                //app.MapOpenApi(); //
-                app.UseSwagger();
-                app.UseSwaggerUI(); // Nó tự động map vào đường dẫn /swagger/index.html
+            app.UseCors("AllowAll");
+            app.UseSwagger();
+            app.UseSwaggerUI();
             
-
-            //app.UseHttpsRedirection(); // kiem tra dang nhap chua -> Create Oject 
-            app.UseAuthentication();   // 🔴 PHẢI có
-            app.UseAuthorization();// roi moi phan quyen-> wwho arre u 
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.MapControllers();
 
             app.Run();

@@ -10,7 +10,25 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -18,10 +36,46 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.ripple
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,7 +83,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,8 +91,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.component.BaseSearchBar
-import com.example.todolist.ui.theme.*
+import com.example.todolist.ui.theme.AccentTerracotta
+import com.example.todolist.ui.theme.AccentTerracottaDeep
+import com.example.todolist.ui.theme.BackgroundCream
+import com.example.todolist.ui.theme.InkBrown
+import com.example.todolist.ui.theme.PeachEnd
+import com.example.todolist.ui.theme.PeachStart
+import com.example.todolist.ui.theme.RingTrack
+import com.example.todolist.ui.theme.StreakOrange
+import com.example.todolist.ui.theme.SurfaceWhite
+import com.example.todolist.ui.theme.TextMuted
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -49,7 +112,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
-import com.example.todolist.ui.LocalAppState
 
 // Screen
 @Composable
@@ -61,17 +123,17 @@ fun HomeScreen(
     HomeContent(
         innerPadding = innerPadding,
         tasks = tasks,
+        // ✅ ĐÃ SỬA: Dùng task.id thay vì index
         onTaskToggle = { task ->
-            val globalIndex = tasks.indexOf(task)
-            if (globalIndex != -1) {
-                viewModel.toggleTodoStatus(globalIndex)
-            }
+            viewModel.toggleTodoStatus(task.id)
         },
-        onTaskUpdate = { globalIndex, updatedTask ->
-            viewModel.updateTodo(globalIndex, updatedTask)
+        // ✅ ĐÃ SỬA: Chỉ truyền updatedTask (trong task đã có sẵn id)
+        onTaskUpdate = { updatedTask ->
+            viewModel.updateTodo(updatedTask)
         },
-        onTaskDelete = { globalIndex ->
-            viewModel.deleteTodo(globalIndex)
+        // ✅ ĐÃ SỬA: Truyền task để lấy id
+        onTaskDelete = { task ->
+            viewModel.deleteTodo(task.id)
         }
     )
 }
@@ -81,8 +143,10 @@ private fun HomeContent(
     innerPadding: PaddingValues,
     tasks: List<HomeUiState>,
     onTaskToggle: (HomeUiState) -> Unit,
-    onTaskUpdate: (Int, HomeUiState) -> Unit,
-    onTaskDelete: (Int) -> Unit
+    // ✅ ĐÃ SỬA: Chỉ cần HomeUiState, không cần Int (index) nữa
+    onTaskUpdate: (HomeUiState) -> Unit,
+    // ✅ ĐÃ SỬA: Nhận HomeUiState thay vì Int
+    onTaskDelete: (HomeUiState) -> Unit
 ) {
     val appState = LocalAppState.current
     val isDark = appState.isDarkMode
@@ -113,8 +177,8 @@ private fun HomeContent(
     val filteredTasks = remember(tasks, selectedYear, selectedMonth, selectedDay, searchQuery, selectedCategoryFilter) {
         tasks.filter { task ->
             val matchesDay = task.duedate.dayOfMonth == selectedDay &&
-                             task.duedate.monthValue == selectedMonth &&
-                             task.duedate.year == selectedYear
+                    task.duedate.monthValue == selectedMonth &&
+                    task.duedate.year == selectedYear
             val matchesQuery = task.title.contains(searchQuery, ignoreCase = true)
             val matchesCategory = selectedCategoryFilter == "All" || task.category == selectedCategoryFilter
             matchesDay && matchesQuery && matchesCategory
@@ -252,11 +316,13 @@ private fun HomeContent(
                     isEditMode = editingTaskIndex == globalIndex,
                     onEnterEditMode = { editingTaskIndex = globalIndex },
                     onCancelEdit = { editingTaskIndex = null },
+                    // ✅ ĐÃ SỬA: Chỉ truyền task.copy(), không truyền globalIndex
                     onSaveEdit = { title, subtitle, priority, duedate ->
-                        onTaskUpdate(globalIndex, task.copy(title = title, subtitle = subtitle, priority = priority, duedate = duedate))
+                        onTaskUpdate(task.copy(title = title, subtitle = subtitle, priority = priority, duedate = duedate))
                         editingTaskIndex = null
                     },
-                    onDelete = { onTaskDelete(globalIndex) },
+                    // ✅ ĐÃ SỬA: Truyền task thay vì globalIndex
+                    onDelete = { onTaskDelete(task) },
                     cardColor = cardColor,
                     textPrimary = textPrimary
                 )
@@ -306,7 +372,7 @@ private fun DateHeaderBar(
             .with(WeekFields.ISO.dayOfWeek(), 1)
 
     val viewLabels = if (lang == "vi") listOf("Ngày", "Tuần", "Tháng")
-                    else listOf("Day", "Week", "Month")
+    else listOf("Day", "Week", "Month")
 
     // Year selection dialog (for Week mode)
     if (showYearPicker) {
@@ -625,7 +691,7 @@ private fun DateHeaderBar(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         val displayMonthText = if (lang == "vi") "Tháng $selectedMonth, $selectedYear"
-                                              else "${LocalDate.of(selectedYear, selectedMonth, 1).month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)}, $selectedYear"
+                        else "${LocalDate.of(selectedYear, selectedMonth, 1).month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)}, $selectedYear"
                         Text(
                             text = displayMonthText,
                             fontSize = 13.sp,
@@ -694,7 +760,7 @@ private fun MonthCalendarView(
     val textColor = if (isDark) Color(0xFFF5E6D3) else InkBrown
     val tabBg = if (isDark) Color(0xFF3D2B1F) else BackgroundCream
     val daysOfWeek = if (lang == "vi") listOf("Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7", "CN")
-                     else listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    else listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
     val firstOfMonth = remember(selectedYear, selectedMonth) {
         LocalDate.of(selectedYear, selectedMonth, 1)
@@ -1055,7 +1121,7 @@ private fun ReminderCard(
     val textColor = if (isDark) Color(0xFF2B1D14) else InkBrown
     val titleText = if (lang == "vi") "Đặt lịch nhắc nhở" else "Set the reminder"
     val bodyText = if (lang == "vi") "Đừng bỏ lỡ thói quen buổi sáng! Đặt nhắc nhở để duy trì."
-                   else "Never miss your morning routine! Set a reminder to stay on track."
+    else "Never miss your morning routine! Set a reminder to stay on track."
     val btnText = if (lang == "vi") "Đặt ngay" else "Set Now"
     Box(
         modifier = Modifier
@@ -1157,7 +1223,7 @@ private fun RoutineTaskRow(
             title = { Text("Delete Task") },
             text = { Text("Do you want delete it?") },
             confirmButton = {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     onDelete()
                     showDeleteAlert = false
                 }) {
@@ -1187,56 +1253,56 @@ private fun RoutineTaskRow(
                     .width(28.dp)
                     .fillMaxHeight()
             ) {
-        // Checkmark circle — green tick with fade animation
-        var showGreenTick by remember { mutableStateOf(false) }
+                // Checkmark circle — green tick with fade animation
+                var showGreenTick by remember { mutableStateOf(false) }
 
-        Box(
-            modifier = Modifier
-                .size(18.dp)
-                .clip(CircleShape)
-                .background(if (task.isDone) StreakOrange else SurfaceWhite)
-                .border(1.dp, if (task.isDone) Color.Transparent else TextMuted.copy(alpha = 0.4f), CircleShape)
-                .clickable(
-                    indication = ripple(bounded = true, radius = 14.dp),
-                    interactionSource = remember { MutableInteractionSource() }
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(if (task.isDone) StreakOrange else SurfaceWhite)
+                        .border(1.dp, if (task.isDone) Color.Transparent else TextMuted.copy(alpha = 0.4f), CircleShape)
+                        .clickable(
+                            indication = ripple(bounded = true, radius = 14.dp),
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            showGreenTick = true
+                            onItemClick()
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    showGreenTick = true
-                    onItemClick()
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            if (task.isDone) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = "Completed",
-                    tint = SurfaceWhite,
-                    modifier = Modifier.size(12.dp)
-                )
-            } else {
-                // Green tick flash animation
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = showGreenTick,
-                    exit = fadeOut(animationSpec = tween(durationMillis = 600))
-                ) {
-                    LaunchedEffect(showGreenTick) {
-                        if (showGreenTick) {
-                            kotlinx.coroutines.delay(600)
-                            showGreenTick = false
+                    if (task.isDone) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = "Completed",
+                            tint = SurfaceWhite,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    } else {
+                        // Green tick flash animation
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = showGreenTick,
+                            exit = fadeOut(animationSpec = tween(durationMillis = 600))
+                        ) {
+                            LaunchedEffect(showGreenTick) {
+                                if (showGreenTick) {
+                                    kotlinx.coroutines.delay(600)
+                                    showGreenTick = false
+                                }
+                            }
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = "Checked",
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(12.dp)
+                            )
                         }
                     }
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = "Checked",
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(12.dp)
-                    )
                 }
             }
-        }
-            }
-            
+
             Spacer(Modifier.width(12.dp))
-            
+
             // Task card
             Surface(
                 shape = RoundedCornerShape(18.dp),
@@ -1267,13 +1333,13 @@ private fun RoutineTaskRow(
                                 unfocusedContainerColor = Color.Transparent
                             )
                         )
-                        
+
                         // Date/Time Selection Row
                         DateDueRow(
                             dateTime = editDueDate,
                             onDateTimeChange = { editDueDate = it }
                         )
-                        
+
                         // Priority Selection
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1306,15 +1372,15 @@ private fun RoutineTaskRow(
                                 )
                             }
                         }
-                        
+
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                             TextButton(onClick = onCancelEdit) { Text("Cancel") }
                             Spacer(Modifier.width(8.dp))
                             Button(
                                 onClick = { onSaveEdit(editTitle, editSubtitle, editPriority, editDueDate) },
                                 colors = ButtonDefaults.buttonColors(containerColor = InkBrown)
-                            ) { 
-                                Text("Accept", color = Color.White) 
+                            ) {
+                                Text("Accept", color = Color.White)
                             }
                         }
                     }
@@ -1365,7 +1431,7 @@ private fun RoutineTaskRow(
                                 DropdownMenuItem(
                                     text = { Text("Delete") },
                                     leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                                    onClick = { 
+                                    onClick = {
                                         expanded = false
                                         showDeleteAlert = true
                                     }
@@ -1373,7 +1439,7 @@ private fun RoutineTaskRow(
                                 DropdownMenuItem(
                                     text = { Text("Edit") },
                                     leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                                    onClick = { 
+                                    onClick = {
                                         expanded = false
                                         onEnterEditMode()
                                     }
@@ -1490,6 +1556,7 @@ private fun TimePickerDialog(
     }
 }
 
+// ✅ ĐÃ SỬA: Cập nhật Preview để match với signature mới
 @Preview(showBackground = true, widthDp = 360, heightDp = 760)
 @Composable
 private fun MorningRoutineScreenPreview() {
@@ -1498,24 +1565,24 @@ private fun MorningRoutineScreenPreview() {
             innerPadding = PaddingValues(0.dp),
             tasks = listOf(
                 HomeUiState(
-                    "Uống Nước Sông", "Lượng nước: 500ml",
+                    0, "Uống Nước Sông", "Lượng nước: 500ml",
                     LocalDateTime.now(), LocalDateTime.now().withHour(8).withMinute(0),
                     1, false, "Morning Routine"
                 ),
                 HomeUiState(
-                    "Thiền tích nội công", "Thời gian: 15 phút",
+                    0, "Thiền tích nội công", "Thời gian: 15 phút",
                     LocalDateTime.now(), LocalDateTime.now().withHour(9).withMinute(0),
                     2, false, "Morning Routine"
                 ),
                 HomeUiState(
-                    "Check Email", "Xử lý inbox công việc",
+                    0, "Check Email", "Xử lý inbox công việc",
                     LocalDateTime.now(), LocalDateTime.now().withHour(10).withMinute(30),
                     3, false, "Work"
                 )
             ),
             onTaskToggle = {},
-            onTaskUpdate = { _, _ -> },
-            onTaskDelete = {}
+            onTaskUpdate = { _ -> },  // ✅ Chỉ 1 tham số
+            onTaskDelete = { _ -> }   // ✅ Chỉ 1 tham số
         )
     }
 }

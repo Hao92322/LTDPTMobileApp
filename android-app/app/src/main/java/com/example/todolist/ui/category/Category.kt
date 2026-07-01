@@ -432,11 +432,11 @@ private fun CreateCategoryDialog(
 
 private val MockCategories = listOf(
     CategoryUi("1", "Work", listOf(
-        HomeUiState("Meeting with team", "Discuss project progress", LocalDateTime.now(), LocalDateTime.now().plusHours(1), 2, false, "Work"),
-        HomeUiState("Email clients", "Send updates", LocalDateTime.now(), LocalDateTime.now().plusHours(2), 1, true, "Work")
+        HomeUiState(0, "Meeting with team", "Discuss project progress", LocalDateTime.now(), LocalDateTime.now().plusHours(1), 2, false, "Work"),
+        HomeUiState(0, "Email clients", "Send updates", LocalDateTime.now(), LocalDateTime.now().plusHours(2), 1, true, "Work")
     )),
     CategoryUi("2", "Personal", listOf(
-        HomeUiState("Buy groceries", "At the supermarket", LocalDateTime.now(), LocalDateTime.now().plusHours(3), 0, false, "Personal")
+        HomeUiState(0, "Buy groceries", "At the supermarket", LocalDateTime.now(), LocalDateTime.now().plusHours(3), 0, false, "Personal")
     )),
     CategoryUi("3", "Fitness", emptyList())
 )
