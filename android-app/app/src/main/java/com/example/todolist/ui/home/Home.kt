@@ -55,12 +55,14 @@ import com.example.todolist.ui.LocalAppState
 @Composable
 fun HomeScreen(
     innerPadding: PaddingValues,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    onProfileClick: () -> Unit = {}
 ) {
     val tasks by viewModel.todoList.collectAsStateWithLifecycle()
     HomeContent(
         innerPadding = innerPadding,
         tasks = tasks,
+        onProfileClick = onProfileClick,
         onTaskToggle = { task ->
             val globalIndex = tasks.indexOf(task)
             if (globalIndex != -1) {
@@ -80,6 +82,7 @@ fun HomeScreen(
 private fun HomeContent(
     innerPadding: PaddingValues,
     tasks: List<HomeUiState>,
+    onProfileClick: () -> Unit,
     onTaskToggle: (HomeUiState) -> Unit,
     onTaskUpdate: (Int, HomeUiState) -> Unit,
     onTaskDelete: (Int) -> Unit
@@ -144,7 +147,7 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(22.dp)
     ) {
         // Greeting + date header
-        item { GreetingHeader(name = "Hao", tasks = filteredTasks, textPrimary = textPrimary) }
+        item { GreetingHeader(name = "Hao", tasks = filteredTasks, textPrimary = textPrimary, onProfileClick = onProfileClick) }
 
         // ── Date header bar
         item {
@@ -927,7 +930,8 @@ private fun SearchBar(
 private fun GreetingHeader(
     name: String,
     tasks: List<HomeUiState>,
-    textPrimary: Color = InkBrown
+    textPrimary: Color = InkBrown,
+    onProfileClick: () -> Unit
 ) {
     val done = tasks.count { it.isDone }
     val progress = if (tasks.isEmpty()) 0f else done / tasks.size.toFloat()
@@ -944,7 +948,13 @@ private fun GreetingHeader(
                 color = textPrimary
             )
         }
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(64.dp)) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .clickable { onProfileClick() }
+        ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val stroke = 5.dp.toPx()
                 drawArc(
@@ -1131,6 +1141,7 @@ private fun SectionHeader(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoutineTaskRow(
     task: HomeUiState,
@@ -1150,6 +1161,26 @@ private fun RoutineTaskRow(
     var editSubtitle by remember(isEditMode) { mutableStateOf(task.subtitle) }
     var editPriority by remember(isEditMode) { mutableIntStateOf(task.priority) }
     var editDueDate by remember(isEditMode) { mutableStateOf(task.duedate) }
+
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { dismissValue ->
+            if (!isEditMode) {
+                when (dismissValue) {
+                    SwipeToDismissBoxValue.StartToEnd -> {
+                        onItemClick()
+                        false
+                    }
+                    SwipeToDismissBoxValue.EndToStart -> {
+                        showDeleteAlert = true
+                        false
+                    }
+                    else -> false
+                }
+            } else {
+                false
+            }
+        }
+    )
 
     if (showDeleteAlert) {
         AlertDialog(
@@ -1238,13 +1269,54 @@ private fun RoutineTaskRow(
             Spacer(Modifier.width(12.dp))
             
             // Task card
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = if (task.isDone) Color(0xFFE8F5E9) else cardColor,
-                shadowElevation = if (task.isDone) 0.dp else 1.dp,
-                tonalElevation = 0.dp,
+            SwipeToDismissBox(
+                state = dismissState,
+                enableDismissFromStartToEnd = !isEditMode,
+                enableDismissFromEndToStart = !isEditMode,
+                backgroundContent = {
+                    val direction = dismissState.dismissDirection
+                    val color = when (direction) {
+                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFF4CAF50) // Green for toggle/complete
+                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFEF5350) // Red for delete
+                        else -> Color.Transparent
+                    }
+                    val alignment = when (direction) {
+                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                        else -> Alignment.Center
+                    }
+                    val icon = when (direction) {
+                        SwipeToDismissBoxValue.StartToEnd -> Icons.Filled.CheckCircle
+                        SwipeToDismissBoxValue.EndToStart -> Icons.Filled.Delete
+                        else -> null
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(color)
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = alignment
+                    ) {
+                        if (icon != null) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                },
                 modifier = Modifier.weight(1f)
             ) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = if (task.isDone) Color(0xFFE8F5E9) else cardColor,
+                    shadowElevation = if (task.isDone) 0.dp else 1.dp,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                 if (isEditMode) {
                     Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextField(
@@ -1383,6 +1455,7 @@ private fun RoutineTaskRow(
                     }
                 }
             }
+            }
         }
     }
 }
@@ -1513,6 +1586,7 @@ private fun MorningRoutineScreenPreview() {
                     3, false, "Work"
                 )
             ),
+            onProfileClick = {},
             onTaskToggle = {},
             onTaskUpdate = { _, _ -> },
             onTaskDelete = {}

@@ -30,7 +30,9 @@ import com.example.todolist.ui.AppState
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.auth.AuthScreen
 import com.example.todolist.ui.category.CategoryManageScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.ui.home.HomeScreen
+import com.example.todolist.ui.home.HomeViewModel
 import com.example.todolist.ui.profile.ProfileScreen
 import com.example.todolist.ui.theme.*
 import com.example.todolist.ui.todo.CreateTodoScreen
@@ -63,6 +65,8 @@ fun MainScreen() {
         var selectedNav by remember { mutableIntStateOf(0) }
         var showCreateTodo by remember { mutableStateOf(false) }
 
+        val homeViewModel: HomeViewModel = viewModel()
+
         BackHandler(enabled = isAuthenticated && (selectedNav != 0 || showCreateTodo)) {
             if (showCreateTodo) {
                 showCreateTodo = false
@@ -79,7 +83,10 @@ fun MainScreen() {
         } else if (showCreateTodo) {
             CreateTodoScreen(
                 onBack = { showCreateTodo = false },
-                onSave = { showCreateTodo = false }
+                onSave = { newTask ->
+                    homeViewModel.addTodo(newTask)
+                    showCreateTodo = false
+                }
             )
         } else {
             Scaffold(
@@ -94,7 +101,11 @@ fun MainScreen() {
                 }
             ) { innerPadding ->
                 when (selectedNav) {
-                    0 -> HomeScreen(innerPadding = innerPadding)
+                    0 -> HomeScreen(
+                        innerPadding = innerPadding,
+                        viewModel = homeViewModel,
+                        onProfileClick = { selectedNav = 4 }
+                    )
                     1 -> CategoryManageScreen(onBack = { selectedNav = 0 })
                     3 -> InsightsScreen(innerPadding = innerPadding)
                     4 -> ProfileScreen(onLogout = { isAuthenticated = false })

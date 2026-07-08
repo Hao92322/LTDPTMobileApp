@@ -31,4 +31,9 @@ class HomeViewModel(
         repository.deleteTask(index)
         _todoList.value = repository.getTodos().toList()
     }
+
+    fun addTodo(task: HomeUiState) {
+        repository.addTask(task)
+        _todoList.value = repository.getTodos().toList()
+    }
 }
