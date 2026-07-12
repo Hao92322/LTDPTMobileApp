@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.Runtime.InteropServices;
 using ToDoApp_BackEnd.Data;
 using ToDoApp_BackEnd.DTOs;
@@ -19,6 +19,16 @@ namespace ToDoApp_BackEnd.Services
         {
             Id = entity.Id,
             Name = entity.Name,
+            TodoItems = entity.TodoItems?.Select(t => new TodoItemDTO
+            {
+                Id = t.Id,
+                CategoryId = t.CategoryId,
+                Title = t.Title,
+                Description = t.Description,
+                DueDate = t.DueDate,
+                IsCompleted = t.IsCompleted,
+                Priority = t.Priority
+            }).ToList()
         };
         //Get list
         public async Task<List<CategoryDTO>> GetListCategories(
@@ -31,7 +41,10 @@ namespace ToDoApp_BackEnd.Services
                 .Where(x => x.UserId == userId);
 
             if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(x => x.Name.Contains(search));
+            {
+                query = query.Where(x => x.Name.Contains(search) || 
+                                         x.TodoItems!.Any(t => t.Title.Contains(search)));
+            }
 
             var items = await query
                 .OrderBy(x => x.Name)
