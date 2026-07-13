@@ -117,12 +117,14 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     innerPadding: PaddingValues,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    onProfileClick: () -> Unit = {}
 ) {
     val tasks by viewModel.todoList.collectAsStateWithLifecycle()
     HomeContent(
         innerPadding = innerPadding,
         tasks = tasks,
+        onProfileClick = onProfileClick,
         // ✅ ĐÃ SỬA: Dùng task.id thay vì index
         onTaskToggle = { task ->
             viewModel.toggleTodoStatus(task.id)
@@ -142,6 +144,7 @@ fun HomeScreen(
 private fun HomeContent(
     innerPadding: PaddingValues,
     tasks: List<HomeUiState>,
+    onProfileClick: () -> Unit,
     onTaskToggle: (HomeUiState) -> Unit,
     // ✅ ĐÃ SỬA: Chỉ cần HomeUiState, không cần Int (index) nữa
     onTaskUpdate: (HomeUiState) -> Unit,
@@ -208,7 +211,7 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(22.dp)
     ) {
         // Greeting + date header
-        item { GreetingHeader(name = "Hao", tasks = filteredTasks, textPrimary = textPrimary) }
+        item { GreetingHeader(name = "Hao", tasks = filteredTasks, textPrimary = textPrimary, onProfileClick = onProfileClick) }
 
         // ── Date header bar
         item {
@@ -993,7 +996,8 @@ private fun SearchBar(
 private fun GreetingHeader(
     name: String,
     tasks: List<HomeUiState>,
-    textPrimary: Color = InkBrown
+    textPrimary: Color = InkBrown,
+    onProfileClick: () -> Unit
 ) {
     val done = tasks.count { it.isDone }
     val progress = if (tasks.isEmpty()) 0f else done / tasks.size.toFloat()
@@ -1010,7 +1014,13 @@ private fun GreetingHeader(
                 color = textPrimary
             )
         }
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(64.dp)) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .clickable { onProfileClick() }
+        ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val stroke = 5.dp.toPx()
                 drawArc(
@@ -1580,6 +1590,7 @@ private fun MorningRoutineScreenPreview() {
                     3, false, "Work"
                 )
             ),
+            onProfileClick = {},
             onTaskToggle = {},
             onTaskUpdate = { _ -> },  // ✅ Chỉ 1 tham số
             onTaskDelete = { _ -> }   // ✅ Chỉ 1 tham số

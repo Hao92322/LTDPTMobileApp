@@ -259,8 +259,8 @@ private fun LoginForm(
             enabled = !isLoading
         ) {
             var hasError = false
-            if (account.isBlank()) { accountError = "Enter your email or username"; hasError = true }
-            if (password.isBlank()) { passwordError = "Enter your password"; hasError = true }
+            if (account.isBlank()) { accountError = "Vui lòng nhập tài khoản hoặc email"; hasError = true }
+            if (password.isBlank()) { passwordError = "Vui lòng nhập mật khẩu"; hasError = true }
             if (!hasError) {
                 // ✅ GỌI API LOGIN
                 viewModel.login(account, password)
@@ -357,10 +357,10 @@ private fun RegisterForm(
             enabled = !isLoading
         ) {
             var hasError = false
-            if (name.isBlank()) { nameError = "Enter your name"; hasError = true }
-            if (account.isBlank()) { accountError = "Enter your email or username"; hasError = true }
-            if (password.length < 6) { passwordError = "At least 6 characters"; hasError = true }
-            if (confirmPassword != password) { confirmError = "Passwords don't match"; hasError = true }
+            if (name.isBlank()) { nameError = "Họ và tên không được để trống"; hasError = true }
+            if (account.isBlank()) { accountError = "Tài khoản hoặc email không được để trống"; hasError = true }
+            if (password.length < 6) { passwordError = "Mật khẩu phải dài ít nhất 6 ký tự"; hasError = true }
+            if (confirmPassword != password) { confirmError = "Mật khẩu xác nhận không trùng khớp"; hasError = true }
             if (!hasError) {
                 // ✅ GỌI API REGISTER
                 viewModel.register(name, account, password, confirmPassword)

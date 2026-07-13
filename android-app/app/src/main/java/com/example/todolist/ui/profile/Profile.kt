@@ -118,13 +118,12 @@ private fun ProfileTopBar(isDark: Boolean = false) {
  ) {
   Text(
    text = "Profile",
-   modifier = Modifier.weight(1f),
+   modifier = Modifier.fillMaxWidth(),
    textAlign = TextAlign.Center,
    fontSize = 20.sp,
    fontWeight = FontWeight.Bold,
    color = textColor
   )
-  Spacer(Modifier.size(40.dp))
  }
 }
 

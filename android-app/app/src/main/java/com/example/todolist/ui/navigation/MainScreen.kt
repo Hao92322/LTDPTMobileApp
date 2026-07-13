@@ -96,7 +96,10 @@ fun MainScreen() {
                 }
             ) { innerPadding ->
                 when (selectedNav) {
-                    0 -> HomeScreen(innerPadding = innerPadding)
+                    0 -> HomeScreen(
+                        innerPadding = innerPadding,
+                        onProfileClick = { selectedNav = 4 }
+                    )
                     1 -> CategoryManageScreen(onBack = { selectedNav = 0 })
                     3 -> InsightsScreen(innerPadding = innerPadding)
                     4 -> ProfileScreen(onLogout = { isAuthenticated = false })
