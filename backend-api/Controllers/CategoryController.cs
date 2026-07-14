@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using ToDoApp_BackEnd.DTOs;
@@ -97,6 +97,10 @@ namespace ToDoApp_BackEnd.Controllers
             {
                 return ErrorResponse(ex.Message, 404);
             }
+            catch (InvalidOperationException ex)
+            {
+                return ErrorResponse(ex.Message, 400); // Trả lỗi 400 khi sửa danh mục mặc định
+            }
             catch (Exception ex)
             {
                 return ErrorResponse(ex.Message, 500);
@@ -107,15 +111,21 @@ namespace ToDoApp_BackEnd.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
-            var xoa = await _CategoryService.DeleteCategory(id,userId);
-            if (!xoa)
+            try
             {
-                return ErrorResponse("NotFound category to delete", 404);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(); // Kiểm tra null
+                var xoa = await _CategoryService.DeleteCategory(id,userId);
+                if (!xoa)
+                {
+                    return ErrorResponse("NotFound category to delete", 404);
+                }
+                return OkResponse("Delete Sucess");
             }
-            return OkResponse("Delete Sucess");
+            catch (InvalidOperationException ex)
+            {
+                return ErrorResponse(ex.Message, 400); // Trả lỗi 400 khi xóa danh mục mặc định
+            }
         }
     }
 }

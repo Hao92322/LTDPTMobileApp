@@ -121,6 +121,11 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
     onProfileClick: () -> Unit = {}
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.loadTodos()
+        viewModel.loadCategories()
+    }
+
     val tasks by viewModel.todoList.collectAsStateWithLifecycle()
     HomeContent(
         innerPadding = innerPadding,

@@ -41,17 +41,28 @@ class ApiTodoRepository(private val context: Context) {
         return@withContext 1
     }
 
+    private fun parseDateTime(dateStr: String?): LocalDateTime {
+        if (dateStr.isNullOrBlank()) return LocalDateTime.now()
+        return try {
+            LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME)
+        } catch (e: Exception) {
+            try {
+                val cleaned = dateStr.trim().replace(" ", "T")
+                LocalDateTime.parse(cleaned, DateTimeFormatter.ISO_DATE_TIME)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                LocalDateTime.now()
+            }
+        }
+    }
+
     private fun mapToHomeUiState(item: TodoItem, categoryName: String = "Default"): HomeUiState {
         return HomeUiState(
             id = item.id,
             title = item.title,
             subtitle = item.description ?: "",
-            createdate = item.createdAt?.let {
-                LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
-            } ?: LocalDateTime.now(),
-            duedate = item.dueDate?.let {
-                LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
-            } ?: LocalDateTime.now(),
+            createdate = parseDateTime(item.createdAt),
+            duedate = parseDateTime(item.dueDate),
             priority = item.priority,
             isDone = item.isCompleted,
             category = categoryName,

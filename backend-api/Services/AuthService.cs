@@ -126,7 +126,9 @@ namespace ToDoApp_BackEnd.Services
         // ===== ĐĂNG NHẬP =====
         public async Task<AuthResponseDTO> Login(LoginDTO model)
         {
+            // Tìm theo email trước, nếu không thấy thì tìm theo username
             var user = await _userManager.FindByEmailAsync(model.Email)
+                ?? await _userManager.FindByNameAsync(model.Email)
                 ?? throw new UnauthorizedAccessException("Invalid email or password.");
 
             var isValidPassword = await _userManager.CheckPasswordAsync(user, model.Password);

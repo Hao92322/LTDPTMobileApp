@@ -67,6 +67,10 @@ fun CreateTodoScreen(
     // ✅ Load danh mục thật từ API
     val categories by homeViewModel.categoryList.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        homeViewModel.loadCategories()
+    }
+
     var title by remember { mutableStateOf("") }
     var subtitle by remember { mutableStateOf("") }
     var duedate by remember { mutableStateOf(LocalDateTime.now()) }

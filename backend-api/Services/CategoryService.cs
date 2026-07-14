@@ -79,6 +79,11 @@ namespace ToDoApp_BackEnd.Services
             var entity = await _context.Categories.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userid)
                 ?? throw new KeyNotFoundException($"Category with ID {id} not found.");
 
+            if (entity.Name == "Công việc chung")
+            {
+                throw new InvalidOperationException("Không thể chỉnh sửa danh mục mặc định.");
+            }
+
             entity.Name = model.Name;
             await _context.SaveChangesAsync();
 
@@ -89,6 +94,12 @@ namespace ToDoApp_BackEnd.Services
         {
             var entity = await _context.Categories.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userid);
             if (entity == null) return false;
+
+            if (entity.Name == "Công việc chung")
+            {
+                throw new InvalidOperationException("Không thể xóa danh mục mặc định.");
+            }
+
             _context.Categories.Remove(entity);
             await _context.SaveChangesAsync();
             return true;

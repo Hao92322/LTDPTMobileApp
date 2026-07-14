@@ -28,6 +28,20 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val _registerResult = MutableStateFlow<RegisterResult?>(null)
     val registerResult: StateFlow<RegisterResult?> = _registerResult.asStateFlow()
 
+    private fun parseErrorMsg(response: retrofit2.Response<*>): String {
+        return try {
+            val errorStr = response.errorBody()?.string()
+            if (!errorStr.isNullOrBlank()) {
+                val json = org.json.JSONObject(errorStr)
+                json.optString("message", "Có lỗi xảy ra")
+            } else {
+                "Có lỗi xảy ra"
+            }
+        } catch (e: Exception) {
+            "Có lỗi xảy ra"
+        }
+    }
+
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -47,7 +61,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
                         _loginResult.value = LoginResult(true, "Đăng nhập thành công")
                     } else {
-                        val errorMsg = response.body()?.message ?: "Email hoặc mật khẩu không đúng"
+                        val errorMsg = parseErrorMsg(response).ifBlank { "Email hoặc mật khẩu không đúng" }
                         _loginResult.value = LoginResult(false, errorMsg)
                     }
                 } catch (e: Exception) {
@@ -79,7 +93,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     if (response.isSuccessful && response.body()?.success == true) {
                         _registerResult.value = RegisterResult(true, "Đăng ký thành công! Vui lòng đăng nhập.")
                     } else {
-                        val errorMsg = response.body()?.message ?: "Đăng ký thất bại"
+                        val errorMsg = parseErrorMsg(response).ifBlank { "Đăng ký thất bại" }
                         _registerResult.value = RegisterResult(false, errorMsg)
                     }
                 } catch (e: Exception) {

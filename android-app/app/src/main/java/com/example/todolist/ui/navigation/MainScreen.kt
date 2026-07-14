@@ -29,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import com.example.todolist.data.repository.TokenManager
 import com.example.todolist.ui.AppState
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.auth.AuthScreen
@@ -111,7 +113,13 @@ fun MainScreen() {
                         homeViewModel = homeViewModel
                     )
                     3 -> InsightsScreen(innerPadding = innerPadding)
-                    4 -> ProfileScreen(onLogout = { isAuthenticated = false })
+                    4 -> {
+                        val context = LocalContext.current
+                        ProfileScreen(onLogout = {
+                            TokenManager.clearToken(context)
+                            isAuthenticated = false
+                        })
+                    }
                 }
             }
         }

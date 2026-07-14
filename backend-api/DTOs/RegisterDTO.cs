@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace ToDoApp_BackEnd.DTOs
 {
@@ -23,8 +23,7 @@ namespace ToDoApp_BackEnd.DTOs
     public class LoginDTO
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty; // Nhận Email hoặc Username
 
         [Required]
         public string Password { get; set; } = string.Empty;
