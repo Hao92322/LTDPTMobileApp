@@ -8,14 +8,39 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    // ===================== TESTER CHÚ Ý =================================
-    // Cắm dây USB → chạy: adb reverse tcp:5158 tcp:5158  → dùng localhost
-    // Không cắm dây (WiFi) → dùng IP máy tính: "http://10.0.23.228:5158/"
-    // Emulator → dùng: "http://10.0.2.2:5158/"
-    // ===================== 🫩🫩🫩 =================================
-    private const val BASE_URL = "http://localhost:5158/"
+    private var currentBaseUrl = "http://192.168.1.69:5158/"
+    private var _apiService: ApiService? = null
 
-    // Cho Emulator: "http://10.0.2.2:5158/"
+    val apiService: ApiService
+        get() {
+            if (_apiService == null) {
+                _apiService = buildApiService(currentBaseUrl)
+            }
+            return _apiService!!
+        }
+
+    fun initialize(context: android.content.Context) {
+        val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+        val savedIp = prefs.getString("backend_ip", "192.168.1.69") ?: "192.168.1.69"
+        currentBaseUrl = "http://$savedIp:5158/"
+        _apiService = buildApiService(currentBaseUrl)
+    }
+
+    fun updateIpAddress(context: android.content.Context, ipAddress: String) {
+        val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("backend_ip", ipAddress).apply()
+        currentBaseUrl = "http://$ipAddress:5158/"
+        _apiService = buildApiService(currentBaseUrl)
+    }
+
+    private fun buildApiService(baseUrl: String): ApiService {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ApiService::class.java)
+    }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -35,13 +60,4 @@ object RetrofitClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
-
-    val apiService: ApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ApiService::class.java)
-    }
 }

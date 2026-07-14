@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.ui.theme.*
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun AuthScreen(
@@ -66,7 +67,83 @@ fun AuthScreen(
         }
     }
 
+    var showIpDialog by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize().background(BackgroundCream)) {
+        IconButton(
+            onClick = { showIpDialog = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, end = 16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Server IP Settings",
+                tint = InkBrown
+            )
+        }
+
+        if (showIpDialog) {
+            val context = LocalContext.current
+            val prefs = remember { context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE) }
+            var ipInput by remember { mutableStateOf(prefs.getString("backend_ip", "192.168.1.69") ?: "192.168.1.69") }
+
+            AlertDialog(
+                onDismissRequest = { showIpDialog = false },
+                containerColor = SurfaceWhite,
+                shape = RoundedCornerShape(20.dp),
+                title = {
+                    Text(
+                        text = "Cấu hình IP Máy chủ",
+                        fontWeight = FontWeight.Bold,
+                        color = InkBrown,
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Nhập địa chỉ IP của máy tính chạy server API (ví dụ: 192.168.1.69):",
+                            fontSize = 13.sp,
+                            color = TextMuted
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = ipInput,
+                            onValueChange = { ipInput = it },
+                            singleLine = true,
+                            placeholder = { Text("192.168.1.69") },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = InkBrown,
+                                unfocusedBorderColor = TextMuted.copy(alpha = 0.4f),
+                                cursorColor = InkBrown
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val trimmedIp = ipInput.trim()
+                            if (trimmedIp.isNotEmpty()) {
+                                com.example.todolist.data.api.RetrofitClient.updateIpAddress(context, trimmedIp)
+                                android.widget.Toast.makeText(context, "Đã cập nhật IP máy chủ thành $trimmedIp", android.widget.Toast.LENGTH_SHORT).show()
+                                showIpDialog = false
+                            }
+                        }
+                    ) {
+                        Text("Lưu", color = InkBrown, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showIpDialog = false }) {
+                        Text("Hủy", color = TextMuted)
+                    }
+                }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()

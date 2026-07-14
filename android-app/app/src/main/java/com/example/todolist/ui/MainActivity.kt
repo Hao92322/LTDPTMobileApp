@@ -12,6 +12,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Khởi tạo RetrofitClient với IP đã lưu
+        com.example.todolist.data.api.RetrofitClient.initialize(this)
+
         // Yêu cầu quyền thông báo ngay khi mở app trên Android 13+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             val hasNotificationPermission = androidx.core.content.ContextCompat.checkSelfPermission(
