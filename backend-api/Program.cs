@@ -29,13 +29,11 @@ namespace ToDoApp_BackEnd
                           .AllowAnyHeader());
             });
 
-            // CẤU HÌNH MYSQL CHO AIVEN
-            // Sử dụng ServerVersion cố định thay vì AutoDetect để tránh lỗi khi EF Core Design-time tạo DbContext
+            // CẤU HÌNH SQLITE LOCAL
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            var serverVersion = new MySqlServerVersion(new Version(8, 0, 36)); 
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseMySql(connectionString, serverVersion));
+                options.UseSqlite(connectionString));
 
             // Cấu hình Identity
             builder.Services.AddIdentity<User, IdentityRole>(options =>

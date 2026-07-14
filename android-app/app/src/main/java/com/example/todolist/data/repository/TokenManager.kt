@@ -9,6 +9,7 @@ object TokenManager {
 
     private const val PREFS_NAME = "secure_auth_prefs"
     private const val KEY_ACCESS_TOKEN = "access_token"
+    private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val KEY_TOKEN_EXPIRY = "token_expiry_time"
 
     private var encryptedPrefs: SharedPreferences? = null
@@ -48,6 +49,7 @@ object TokenManager {
     fun saveToken(
         context: Context,
         accessToken: String,
+        refreshToken: String = "",
         expiresIn: Long = 3600
     ) {
         val prefs = getEncryptedPrefs(context)
@@ -55,6 +57,7 @@ object TokenManager {
 
         prefs.edit()
             .putString(KEY_ACCESS_TOKEN, accessToken)
+            .putString(KEY_REFRESH_TOKEN, refreshToken)
             .putLong(KEY_TOKEN_EXPIRY, expiryTime)
             .commit()
     }
@@ -79,5 +82,37 @@ object TokenManager {
     fun clearToken(context: Context) {
         val prefs = getEncryptedPrefs(context)
         prefs.edit().clear().commit()
+    }
+
+    // ===== GIẢI MÃ JWT ĐỂ LẤY THÔNG TIN USER =====
+    private fun getJwtPayloadField(token: String, fieldKey: String): String? {
+        return try {
+            val parts = token.split(".")
+            if (parts.size < 2) return null
+            val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.DEFAULT))
+            val json = org.json.JSONObject(payload)
+            if (json.has(fieldKey)) {
+                json.getString(fieldKey)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun getUsername(context: Context): String {
+        val token = getAccessToken(context) ?: return "User"
+        return getJwtPayloadField(token, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
+            ?: getJwtPayloadField(token, "unique_name")
+            ?: "User"
+    }
+
+    fun getEmail(context: Context): String {
+        val token = getAccessToken(context) ?: return "user@gmail.com"
+        return getJwtPayloadField(token, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")
+            ?: getJwtPayloadField(token, "email")
+            ?: "user@gmail.com"
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.todolist.ui.AppState
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.theme.*
+import com.example.todolist.data.repository.TokenManager
 
 data class UserProfile(
  val name: String,
@@ -68,11 +69,19 @@ private fun sampleUserProfile() = UserProfile(
 
 @Composable
 fun ProfileScreen(
- profile: UserProfile = remember { sampleUserProfile() },
  onEditProfile: () -> Unit = {},
  onSettingsItemClick: (String) -> Unit = {},
  onLogout: () -> Unit = {}
 ) {
+ val context = androidx.compose.ui.platform.LocalContext.current
+ val userName = remember { TokenManager.getUsername(context) }
+ val userEmail = remember { TokenManager.getEmail(context) }
+ val profile = remember(userName, userEmail) {
+  sampleUserProfile().copy(
+   name = userName,
+   handle = "@${userName.lowercase().replace(" ", "")}"
+  )
+ }
  val appState = LocalAppState.current
  val isDark = appState.isDarkMode
 

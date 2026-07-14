@@ -12,7 +12,7 @@ object RetrofitClient {
     // Thay đổi thường xuyên tùy theo WIFI hoặc cổng LAN
     // Vào CMD -> gõ ipconfig -> Tìm IPv4 -> paste vào base IP đó -> sau đó ":5158"
     // ===================== 🫩🫩🫩 =================================
-    private const val BASE_URL = "http://10.0.52.207:5158/"
+    private const val BASE_URL = "http://10.0.23.228:5158/"
 
     // Cho Emulator: "http://10.0.2.2:5158/"
 

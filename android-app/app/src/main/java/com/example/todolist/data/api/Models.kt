@@ -19,7 +19,8 @@ data class LoginResponse(
 )
 
 data class AuthData(
-    val token: String,
+    val accessToken: String = "",
+    val refreshToken: String = "",
     val expiresIn: Int = 3600
 )
 

@@ -93,6 +93,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.component.BaseSearchBar
+import com.example.todolist.data.repository.TokenManager
 import com.example.todolist.ui.theme.AccentTerracotta
 import com.example.todolist.ui.theme.AccentTerracottaDeep
 import com.example.todolist.ui.theme.BackgroundCream
@@ -211,7 +212,11 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(22.dp)
     ) {
         // Greeting + date header
-        item { GreetingHeader(name = "Hao", tasks = filteredTasks, textPrimary = textPrimary, onProfileClick = onProfileClick) }
+        item {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val userName = remember { TokenManager.getUsername(context) }
+            GreetingHeader(name = userName, tasks = filteredTasks, textPrimary = textPrimary, onProfileClick = onProfileClick)
+        }
 
         // ── Date header bar
         item {

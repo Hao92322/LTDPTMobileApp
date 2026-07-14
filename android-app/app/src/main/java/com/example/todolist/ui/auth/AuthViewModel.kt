@@ -38,11 +38,12 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     val response = apiService.login(LoginRequest(email, password))
 
                     if (response.isSuccessful && response.body()?.success == true) {
-                        val token = response.body()?.data?.token ?: ""
+                        val accessToken = response.body()?.data?.accessToken ?: ""
+                        val refreshToken = response.body()?.data?.refreshToken ?: ""
                         val expiresIn = response.body()?.data?.expiresIn?.toLong() ?: 3600L
 
                         // Lưu token
-                        TokenManager.saveToken(context, token, expiresIn)
+                        TokenManager.saveToken(context, accessToken, refreshToken, expiresIn)
 
                         _loginResult.value = LoginResult(true, "Đăng nhập thành công")
                     } else {
