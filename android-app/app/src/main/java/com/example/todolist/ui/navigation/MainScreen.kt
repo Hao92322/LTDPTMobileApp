@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.example.todolist.data.repository.TokenManager
@@ -112,13 +113,19 @@ fun MainScreen() {
                         onBack = { selectedNav = 0 },
                         homeViewModel = homeViewModel
                     )
-                    3 -> InsightsScreen(innerPadding = innerPadding)
+                    3 -> InsightsScreen(
+                        innerPadding = innerPadding,
+                        homeViewModel = homeViewModel
+                    )
                     4 -> {
                         val context = LocalContext.current
-                        ProfileScreen(onLogout = {
-                            TokenManager.clearToken(context)
-                            isAuthenticated = false
-                        })
+                        ProfileScreen(
+                            onLogout = {
+                                TokenManager.clearToken(context)
+                                isAuthenticated = false
+                            },
+                            homeViewModel = homeViewModel
+                        )
                     }
                 }
             }
@@ -129,7 +136,10 @@ fun MainScreen() {
 // ─────────────────────────── Insights Screen ────────────────────────────────
 
 @Composable
-fun InsightsScreen(innerPadding: PaddingValues) {
+fun InsightsScreen(
+    innerPadding: PaddingValues,
+    homeViewModel: HomeViewModel = viewModel()
+) {
     val appState = LocalAppState.current
     val isDark = appState.isDarkMode
 
@@ -137,21 +147,96 @@ fun InsightsScreen(innerPadding: PaddingValues) {
     val textPrimary = if (isDark) Color(0xFFF5E6D3) else InkBrown
     val textSecondary = if (isDark) Color(0xFF9C8C7E) else TextMuted
 
-    val weeklyData = listOf(3, 5, 2, 6, 4, 1, 3)
-    val prevWeekData = listOf(2, 4, 3, 5, 2, 2, 4)
+    // ✅ Quan sát danh sách công việc và danh mục thực tế từ Database
+    val todos by homeViewModel.todoList.collectAsStateWithLifecycle()
+    val categories by homeViewModel.categoryList.collectAsStateWithLifecycle()
+
+    // Tải lại dữ liệu khi vào tab Thống kê
+    LaunchedEffect(Unit) {
+        homeViewModel.loadTodos()
+        homeViewModel.loadCategories()
+    }
+
+    // 1️⃣ Tính số nhiệm vụ đã hoàn thành
+    val totalCompleted = todos.count { it.isDone }
+
+    // 2️⃣ Tính chuỗi ngày liên tiếp (Streaks)
+    val completedDates = todos.filter { it.isDone }
+        .map { it.duedate.toLocalDate() }
+        .distinct()
+        .sortedDescending()
+
+    var currentStreak = 0
+    var bestStreak = 0
+
+    if (completedDates.isNotEmpty()) {
+        val todayLocalDate = java.time.LocalDate.now()
+        val yesterday = todayLocalDate.minusDays(1)
+        if (completedDates.contains(todayLocalDate) || completedDates.contains(yesterday)) {
+            var checkDate = if (completedDates.contains(todayLocalDate)) todayLocalDate else yesterday
+            while (completedDates.contains(checkDate)) {
+                currentStreak++
+                checkDate = checkDate.minusDays(1)
+            }
+        }
+        val sortedDatesAsc = completedDates.sorted()
+        var tempStreak = 0
+        var prevDate: java.time.LocalDate? = null
+        for (date in sortedDatesAsc) {
+            if (prevDate == null) {
+                tempStreak = 1
+            } else {
+                if (date == prevDate.plusDays(1)) {
+                    tempStreak++
+                } else if (date != prevDate) {
+                    if (tempStreak > bestStreak) {
+                        bestStreak = tempStreak
+                    }
+                    tempStreak = 1
+                }
+            }
+            prevDate = date
+        }
+        if (tempStreak > bestStreak) {
+            bestStreak = tempStreak
+        }
+    }
+    if (bestStreak < currentStreak) {
+        bestStreak = currentStreak
+    }
+
+    // 3️⃣ Tính toán dữ liệu tuần này theo ngày (T2..CN)
+    val today = java.time.LocalDate.now()
+    val dayOfWeekVal = today.dayOfWeek.value // 1 (Mon) to 7 (Sun)
+    val startOfWeek = today.minusDays((dayOfWeekVal - 1).toLong())
+
+    val weeklyData = (0..6).map { index ->
+        val targetDate = startOfWeek.plusDays(index.toLong())
+        todos.count { it.isDone && it.duedate.toLocalDate() == targetDate }
+    }
     val days = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
     val maxVal = weeklyData.maxOrNull()?.coerceAtLeast(1) ?: 1
-
     val thisWeekTotal = weeklyData.sum()
-    val lastWeekTotal = prevWeekData.sum()
-    val percentChange = ((thisWeekTotal - lastWeekTotal) / lastWeekTotal.toFloat() * 100).toInt()
 
-    val categoryInsights = listOf(
-        Triple("Hydration", Color(0xFFFBE3C3), 34),
-        Triple("Mindfulness", Color(0xFFDCEFD9), 41),
-        Triple("Fitness", Color(0xFFE7DEF7), 28),
-        Triple("Outdoor", Color(0xFFDBEBF6), 25),
-    )
+    // Tính tuần trước
+    val startOfLastWeek = startOfWeek.minusWeeks(1)
+    val lastWeekTotal = todos.count { todo ->
+        todo.isDone && !todo.duedate.toLocalDate().isBefore(startOfLastWeek) && todo.duedate.toLocalDate().isBefore(startOfWeek)
+    }
+
+    val percentChange = if (lastWeekTotal > 0) {
+        ((thisWeekTotal - lastWeekTotal) / lastWeekTotal.toFloat() * 100).toInt()
+    } else {
+        if (thisWeekTotal > 0) 100 else 0
+    }
+
+    // 4️⃣ Tính toán theo danh mục
+    val themeColors = listOf(Color(0xFFFBE3C3), Color(0xFFDCEFD9), Color(0xFFE7DEF7), Color(0xFFDBEBF6))
+    val categoryInsights = categories.mapIndexed { index, category ->
+        val color = themeColors[index % themeColors.size]
+        val count = todos.count { it.categoryId == category.id && it.isDone }
+        Triple(category.name, color, count)
+    }
     val topCategory = categoryInsights.maxByOrNull { it.third }
 
     Column(
@@ -182,15 +267,15 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             val labelBest = if (appState.language == "vi") "Chuỗi kỷ lục" else "Best streak"
 
             StatCard(
-                icon = Icons.Filled.TaskAlt, value = "128", label = labelDone,
+                icon = Icons.Filled.TaskAlt, value = "$totalCompleted", label = labelDone,
                 modifier = Modifier.weight(1f), cardColor = cardBg, textPrimary = textPrimary
             )
             StatCard(
-                icon = Icons.Filled.LocalFireDepartment, value = "6d", label = labelCurrent,
+                icon = Icons.Filled.LocalFireDepartment, value = "${currentStreak}d", label = labelCurrent,
                 modifier = Modifier.weight(1f), cardColor = cardBg, textPrimary = textPrimary
             )
             StatCard(
-                icon = Icons.Filled.EmojiEvents, value = "21d", label = labelBest,
+                icon = Icons.Filled.EmojiEvents, value = "${bestStreak}d", label = labelBest,
                 modifier = Modifier.weight(1f), cardColor = cardBg, textPrimary = textPrimary
             )
         }
@@ -341,6 +426,26 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             }
         }
 
+        // Dynamic Smart Tip calculation
+        val smartTipText = remember(categoryInsights, appState.language) {
+            if (categoryInsights.isNotEmpty()) {
+                val leastCompleted = categoryInsights.minByOrNull { it.third }
+                val catName = leastCompleted?.first ?: ""
+                val count = leastCompleted?.third ?: 0
+                if (appState.language == "vi") {
+                    "Bạn đã hoàn thành $count nhiệm vụ trong danh mục '$catName'. Hãy tiếp tục phát huy và tạo thêm mục tiêu mới nhé!"
+                } else {
+                    "You completed $count tasks in '$catName'. Keep up the momentum and define new goals!"
+                }
+            } else {
+                if (appState.language == "vi") {
+                    "Hãy tạo danh mục và công việc mới để hệ thống theo dõi tiến độ của bạn nhé!"
+                } else {
+                    "Create your first tasks and categories so we can track your activity!"
+                }
+            }
+        }
+
         // Smart Tip
         Surface(
             shape = RoundedCornerShape(20.dp),
@@ -357,10 +462,7 @@ fun InsightsScreen(innerPadding: PaddingValues) {
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = if (appState.language == "vi")
-                            "Bạn thường bỏ lỡ Fitness vào cuối tuần. Hãy đặt nhắc nhở vào T7!"
-                        else
-                            "You tend to skip Fitness on weekends. Try setting a reminder for Saturday!",
+                        text = smartTipText,
                         fontSize = 13.sp, color = textSecondary, lineHeight = 18.sp
                     )
                 }

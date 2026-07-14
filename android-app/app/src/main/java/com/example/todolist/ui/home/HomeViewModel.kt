@@ -84,11 +84,36 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _todoList.value = repository.getTodos()
+                val list = repository.getTodos()
+                _todoList.value = list
+                syncAlarms(list) // ✅ Tự động đồng bộ lịch báo thức khi danh sách thay đổi
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    private fun syncAlarms(todos: List<HomeUiState>) {
+        val context = getApplication<Application>().applicationContext
+        todos.forEach { task ->
+            if (task.isDone) {
+                // Hủy báo thức nếu công việc đã hoàn thành
+                com.example.todolist.ui.reminder.ReminderScheduler.cancelAlarm(context, task.id)
+            } else {
+                // Lập lịch nếu công việc chưa hoàn thành và thời gian ở tương lai
+                if (task.duedate.isAfter(java.time.LocalDateTime.now())) {
+                    com.example.todolist.ui.reminder.ReminderScheduler.scheduleAlarm(
+                        context,
+                        task.id,
+                        task.title,
+                        task.subtitle,
+                        task.duedate
+                    )
+                } else {
+                    com.example.todolist.ui.reminder.ReminderScheduler.cancelAlarm(context, task.id)
+                }
             }
         }
     }

@@ -123,6 +123,9 @@ fun CategoryManageScreen(
                                 homeViewModel.updateCategory(category.id, newName)
                             },
                             onDeleteRequest = { pendingDelete = category },
+                            onToggleTodoStatus = { todoId ->
+                                homeViewModel.toggleTodoStatus(todoId)
+                            },
                             isDark = isDark
                         )
                     }
@@ -176,8 +179,10 @@ private fun ManageTopBar(onBack: () -> Unit, isDark: Boolean = false) {
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = textColor, modifier = Modifier.size(18.dp))
         }
+        val appState = LocalAppState.current
+        val headerText = if (appState.language == "vi") "Quản lý danh mục" else "Manage Categories"
         Text(
-            text = "Manage Categories",
+            text = headerText,
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center,
             fontSize = 18.sp,
@@ -194,6 +199,7 @@ private fun CategoryCard(
     onToggleExpand: () -> Unit,
     onRename: (String) -> Unit,
     onDeleteRequest: () -> Unit,
+    onToggleTodoStatus: (Int) -> Unit,
     isDark: Boolean = false
 ) {
     val cardColor = if (isDark) Color(0xFF2C1F14) else SurfaceWhite
@@ -290,7 +296,16 @@ private fun CategoryCard(
                         )
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            category.todos.forEach { todo -> MiniTodoRow(todo, rowBg, textColor) }
+                            category.todos.forEach { todo ->
+                                MiniTodoRow(
+                                    todo = todo,
+                                    rowBg = rowBg,
+                                    textColor = textColor,
+                                    onToggleStatus = {
+                                        onToggleTodoStatus(todo.id)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -322,8 +337,14 @@ private fun IconActionButton(
 private fun MiniTodoRow(
     todo: HomeUiState,
     rowBg: Color = BackgroundCream,
-    textColor: Color = InkBrown
+    textColor: Color = InkBrown,
+    onToggleStatus: () -> Unit
 ) {
+    val priorityColor = when (todo.priority) {
+        0 -> Color(0xFF4CAF50) // Low: Green
+        1 -> Color(0xFFFF9800) // Medium: Orange
+        else -> Color(0xFFF44336) // High: Red
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -332,12 +353,23 @@ private fun MiniTodoRow(
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Priority color indicator bar
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(20.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(priorityColor)
+        )
+        Spacer(Modifier.width(10.dp))
+
         Box(
             modifier = Modifier
                 .size(16.dp)
                 .clip(CircleShape)
                 .background(if (todo.isDone) StreakOrange else SurfaceWhite)
-                .border(1.dp, if (todo.isDone) StreakOrange else TextMuted.copy(alpha = 0.4f), CircleShape),
+                .border(1.dp, if (todo.isDone) StreakOrange else TextMuted.copy(alpha = 0.4f), CircleShape)
+                .clickable { onToggleStatus() },
             contentAlignment = Alignment.Center
         ) {
             if (todo.isDone) {

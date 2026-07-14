@@ -28,6 +28,8 @@ import com.example.todolist.ui.AppState
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.theme.*
 import com.example.todolist.data.repository.TokenManager
+import com.example.todolist.ui.home.HomeViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 data class UserProfile(
  val name: String,
@@ -71,18 +73,121 @@ private fun sampleUserProfile() = UserProfile(
 fun ProfileScreen(
  onEditProfile: () -> Unit = {},
  onSettingsItemClick: (String) -> Unit = {},
- onLogout: () -> Unit = {}
+ onLogout: () -> Unit = {},
+ homeViewModel: HomeViewModel? = null
 ) {
  val context = androidx.compose.ui.platform.LocalContext.current
  val userName = remember { TokenManager.getUsername(context) }
  val userEmail = remember { TokenManager.getEmail(context) }
- val profile = remember(userName, userEmail) {
-  sampleUserProfile().copy(
+
+ // Tải lại dữ liệu nếu có viewModel
+ LaunchedEffect(Unit) {
+  homeViewModel?.loadTodos()
+  homeViewModel?.loadCategories()
+ }
+
+ val todosState = homeViewModel?.todoList?.collectAsStateWithLifecycle()
+ val categoriesState = homeViewModel?.categoryList?.collectAsStateWithLifecycle()
+
+ val todos = todosState?.value ?: emptyList()
+ val categories = categoriesState?.value ?: emptyList()
+
+ // 1️⃣ Tính số nhiệm vụ đã hoàn thành
+ val totalCompleted = todos.count { it.isDone }
+
+ // 2️⃣ Tính chuỗi ngày liên tiếp (Streaks)
+ val completedDates = todos.filter { it.isDone }
+     .map { it.duedate.toLocalDate() }
+     .distinct()
+     .sortedDescending()
+
+ var currentStreak = 0
+ var bestStreak = 0
+
+ if (completedDates.isNotEmpty()) {
+     val todayLocalDate = java.time.LocalDate.now()
+     val yesterday = todayLocalDate.minusDays(1)
+     if (completedDates.contains(todayLocalDate) || completedDates.contains(yesterday)) {
+         var checkDate = if (completedDates.contains(todayLocalDate)) todayLocalDate else yesterday
+         while (completedDates.contains(checkDate)) {
+             currentStreak++
+             checkDate = checkDate.minusDays(1)
+         }
+     }
+     val sortedDatesAsc = completedDates.sorted()
+     var tempStreak = 0
+     var prevDate: java.time.LocalDate? = null
+     for (date in sortedDatesAsc) {
+         if (prevDate == null) {
+             tempStreak = 1
+         } else {
+             if (date == prevDate.plusDays(1)) {
+                 tempStreak++
+             } else if (date != prevDate) {
+                 if (tempStreak > bestStreak) {
+                     bestStreak = tempStreak
+                 }
+                 tempStreak = 1
+             }
+         }
+         prevDate = date
+     }
+     if (tempStreak > bestStreak) {
+         bestStreak = tempStreak
+     }
+ }
+ if (bestStreak < currentStreak) {
+     bestStreak = currentStreak
+ }
+
+ // 3️⃣ Tính toán dữ liệu tuần này theo ngày (T2..CN)
+ val today = java.time.LocalDate.now()
+ val dayOfWeekVal = today.dayOfWeek.value // 1 (Mon) to 7 (Sun)
+ val startOfWeek = today.minusDays((dayOfWeekVal - 1).toLong())
+
+ val weeklyCompletion = (0..6).map { index ->
+     val targetDate = startOfWeek.plusDays(index.toLong())
+     todos.count { it.isDone && it.duedate.toLocalDate() == targetDate }
+ }
+
+ // 4️⃣ Tính toán theo danh mục
+ val themeColors = listOf(SandBg, MintBg, LavenderBg, SkyBg)
+ val themeIcons = listOf(Icons.Filled.LocalDrink, Icons.Filled.SelfImprovement, Icons.Filled.Accessibility, Icons.Filled.DirectionsWalk)
+ val categoryStats = categories.mapIndexed { index, category ->
+     val count = todos.count { it.categoryId == category.id && it.isDone }
+     CategoryStat(
+         name = category.name,
+         color = themeColors[index % themeColors.size],
+         icon = themeIcons[index % themeIcons.size],
+         count = count
+     )
+ }
+
+ // 5️⃣ Huy hiệu
+ val badges = listOf(
+  BadgeUi("7-Day Streak", Icons.Filled.LocalFireDepartment, bestStreak >= 7),
+  BadgeUi("Early Bird", Icons.Filled.WbSunny, totalCompleted >= 5),
+  BadgeUi("100 Tasks", Icons.Filled.EmojiEvents, totalCompleted >= 100),
+  BadgeUi("30-Day Streak", Icons.Filled.WorkspacePremium, bestStreak >= 30),
+  BadgeUi("Night Owl", Icons.Filled.NightsStay, totalCompleted >= 10),
+ )
+
+ val appState = LocalAppState.current
+ val isVi = appState.language == "vi"
+
+ val profile = remember(userName, userEmail, totalCompleted, currentStreak, bestStreak, weeklyCompletion, categoryStats, badges, isVi) {
+  UserProfile(
    name = userName,
-   handle = "@${userName.lowercase().replace(" ", "")}"
+   handle = "@${userName.lowercase().replace(" ", "")}",
+   joinedLabel = if (isVi) "Th7 2026" else "Jul 2026",
+   totalTasksDone = totalCompleted,
+   currentStreak = currentStreak,
+   bestStreak = bestStreak,
+   weeklyCompletion = weeklyCompletion,
+   categoryStats = categoryStats,
+   badges = badges
   )
  }
- val appState = LocalAppState.current
  val isDark = appState.isDarkMode
 
  val bgColor = if (isDark) Color(0xFF1A120B) else BackgroundCream
@@ -113,8 +218,10 @@ fun ProfileScreen(
   }
  }
 }
+
 @Composable
 private fun ProfileTopBar(isDark: Boolean = false) {
+ val appState = LocalAppState.current
  val bg = if (isDark) Color(0xFF1A120B) else BackgroundCream
  val textColor = if (isDark) Color(0xFFF5E6D3) else InkBrown
  Row(
@@ -126,7 +233,7 @@ private fun ProfileTopBar(isDark: Boolean = false) {
   verticalAlignment = Alignment.CenterVertically
  ) {
   Text(
-   text = "Profile",
+   text = if (appState.language == "vi") "Cá nhân" else "Profile",
    modifier = Modifier.fillMaxWidth(),
    textAlign = TextAlign.Center,
    fontSize = 20.sp,
@@ -143,6 +250,10 @@ private fun ProfileHeader(
  onEditProfile: () -> Unit,
  textPrimary: Color = InkBrown
 ) {
+ val appState = LocalAppState.current
+ val isVi = appState.language == "vi"
+ val joinedText = if (isVi) "Từ ${profile.joinedLabel}" else "Since ${profile.joinedLabel}"
+
  Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
   Box(contentAlignment = Alignment.BottomEnd) {
    Box(
@@ -180,7 +291,7 @@ private fun ProfileHeader(
   Text(profile.name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = textPrimary)
   Spacer(Modifier.height(2.dp))
   Text(
-   text = "${profile.handle} · Since ${profile.joinedLabel}",
+   text = "${profile.handle} · $joinedText",
    fontSize = 13.sp,
    color = TextMuted
   )
@@ -230,8 +341,11 @@ private fun WeeklyActivityCard(
  cardColor: Color = SurfaceWhite,
  textPrimary: Color = InkBrown
 ) {
+ val appState = LocalAppState.current
+ val isVi = appState.language == "vi"
  val maxVal = (weekly.maxOrNull() ?: 1).coerceAtLeast(1)
- val days = listOf("M", "T", "W", "T", "F", "S", "S")
+ val days = if (isVi) listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+            else listOf("M", "T", "W", "T", "F", "S", "S")
 
  Column(
   modifier = Modifier
@@ -240,7 +354,7 @@ private fun WeeklyActivityCard(
    .background(cardColor)
    .padding(18.dp)
  ) {
-  Text("This week", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary)
+  Text(if (isVi) "Tuần này" else "This week", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary)
   Spacer(Modifier.height(16.dp))
   Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
    weekly.forEachIndexed { index, count ->
@@ -305,6 +419,8 @@ private fun CategoryBreakdownCard(
  textPrimary: Color = InkBrown,
  bgColor: Color = BackgroundCream
 ) {
+ val appState = LocalAppState.current
+ val isVi = appState.language == "vi"
  val total = stats.sumOf { it.count }.coerceAtLeast(1)
  Column(
   modifier = Modifier
@@ -313,7 +429,7 @@ private fun CategoryBreakdownCard(
    .background(cardColor)
    .padding(18.dp)
  ) {
-  Text("By category", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary)
+  Text(if (isVi) "Theo danh mục" else "By category", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary)
   Spacer(Modifier.height(14.dp))
   stats.forEachIndexed { index, stat ->
    CategoryStatRow(stat, total, textPrimary, bgColor)

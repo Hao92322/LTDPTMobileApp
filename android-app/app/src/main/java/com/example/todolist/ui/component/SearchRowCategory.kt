@@ -26,12 +26,18 @@ import com.example.todolist.ui.theme.AccentTerracottaDeep
 import com.example.todolist.ui.theme.InputBorder
 import com.example.todolist.ui.theme.SurfaceWhite
 
+import com.example.todolist.ui.LocalAppState
+
 @Composable
 fun SearchRowCategory(
     query: String,
     onQueryChange: (String) -> Unit,
     onCreateClick: () -> Unit
 ) {
+    val appState = LocalAppState.current
+    val isVi = appState.language == "vi"
+    val placeholder = if (isVi) "Tìm kiếm danh mục ..." else "Search categories..."
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -45,7 +51,7 @@ fun SearchRowCategory(
                 .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceWhite)
                 .border(1.dp, InputBorder, RoundedCornerShape(16.dp)),
-            placeholderText = "Tìm kiếm danh mục ..."
+            placeholderText = placeholder
         )
         Box(
             modifier = Modifier

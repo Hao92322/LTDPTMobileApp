@@ -89,6 +89,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.ui.LocalAppState
@@ -178,6 +179,25 @@ private fun HomeContent(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf("All") }
     var editingTaskIndex by remember { mutableStateOf<Int?>(null) }
+
+    val context = LocalContext.current
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            android.widget.Toast.makeText(
+                context,
+                if (lang == "vi") "Đã cấp quyền thông báo!" else "Notification permission granted!",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            android.widget.Toast.makeText(
+                context,
+                if (lang == "vi") "Quyền thông báo bị từ chối!" else "Notification permission denied!",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     val bgColor = if (isDark) Color(0xFF1A120B) else BackgroundCream
     val cardColor = if (isDark) Color(0xFF2C1F14) else SurfaceWhite
@@ -280,7 +300,62 @@ private fun HomeContent(
             }
         }
 
-        item { ReminderCard(onSetReminder = { /* TODO */ }, isDark = isDark, lang = lang) }
+        item {
+            ReminderCard(
+                onSetReminder = {
+                    // 1. Xin quyền thông báo trên Android 13+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        val hasNotificationPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                            context,
+                            android.Manifest.permission.POST_NOTIFICATIONS
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                        if (!hasNotificationPermission) {
+                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+
+                    // 2. Xin quyền đặt báo thức chính xác trên Android 12+
+                    val alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE) as? android.app.AlarmManager
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && alarmManager != null) {
+                        if (!alarmManager.canScheduleExactAlarms()) {
+                            android.widget.Toast.makeText(
+                                context,
+                                if (lang == "vi") "Vui lòng cho phép ứng dụng đặt báo thức chính xác trong Cài đặt!"
+                                else "Please allow the app to schedule exact alarms in settings!",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                            try {
+                                val intent = android.content.Intent().apply {
+                                    action = android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                                    data = android.net.Uri.parse("package:${context.packageName}")
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_SETTINGS)
+                                context.startActivity(intent)
+                            }
+                        } else {
+                            android.widget.Toast.makeText(
+                                context,
+                                if (lang == "vi") "Tính năng báo thức đã sẵn sàng!"
+                                else "Alarm feature is ready!",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            if (lang == "vi") "Tính năng báo thức đã sẵn sàng!"
+                            else "Alarm feature is ready!",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                isDark = isDark,
+                lang = lang
+            )
+        }
 
         item {
             SearchBar(
@@ -1405,12 +1480,25 @@ private fun RoutineTaskRow(
                         }
                     }
                 } else {
+                    val priorityColor = when (task.priority) {
+                        0 -> Color(0xFF4CAF50) // Low: Green
+                        1 -> Color(0xFFFF9800) // Medium: Orange
+                        else -> Color(0xFFF44336) // High: Red
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
+                            .padding(horizontal = 14.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Priority color indicator bar
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(28.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(priorityColor)
+                        )
                         Spacer(Modifier.width(12.dp))
 
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
