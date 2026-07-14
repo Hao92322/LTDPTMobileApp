@@ -28,7 +28,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.data.api.Category
 import com.example.todolist.ui.component.BaseSearchBar
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.home.HomeViewModel
@@ -40,7 +42,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private data class TodoCategory(val id: Int, val label: String)
+
 private data class PriorityOption(val level: Int, val label: String, val color: Color)
 
 private val priorityOptions = listOf(
@@ -52,7 +54,7 @@ private val priorityOptions = listOf(
 @Composable
 fun CreateTodoScreen(
     onBack: () -> Unit = {},
-    homeViewModel: HomeViewModel = viewModel(), // ✅ Tích hợp HomeViewModel
+    homeViewModel: HomeViewModel = viewModel(),
     innerPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val appState = LocalAppState.current
@@ -62,20 +64,17 @@ fun CreateTodoScreen(
     val cardColor = if (isDark) Color(0xFF2C1F14) else SurfaceWhite
     val textColor = if (isDark) Color(0xFFF5E6D3) else InkBrown
 
-    var categories = remember(lang) {
-        mutableStateListOf(
-            TodoCategory(1, if (lang == "vi") "Bổ sung nước" else "Hydration"),
-            TodoCategory(2, if (lang == "vi") "Tập thể dục" else "Fitness")
-        )
-    }
+    // ✅ Load danh mục thật từ API
+    val categories by homeViewModel.categoryList.collectAsStateWithLifecycle()
+
     var title by remember { mutableStateOf("") }
     var subtitle by remember { mutableStateOf("") }
     var duedate by remember { mutableStateOf(LocalDateTime.now()) }
-    var selectedCategory by remember { mutableStateOf<TodoCategory?>(null) }
+    var selectedCategory by remember { mutableStateOf<com.example.todolist.data.api.Category?>(null) }
     var selectedPriority by remember { mutableIntStateOf(0) }
     var titleError by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    val categoriesFiltered = categories.filter { it.label.contains(searchQuery, ignoreCase = true) }
+    val categoriesFiltered = categories.filter { it.name.contains(searchQuery, ignoreCase = true) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var titleNewCategory by remember { mutableStateOf("") }
 
@@ -105,7 +104,8 @@ fun CreateTodoScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(onClick = {
                             if (titleNewCategory.isNotBlank()) {
-                                categories.add(TodoCategory(categories.size + 1, titleNewCategory))
+                                // ✅ Gọi API tạo danh mục mới
+                                homeViewModel.createCategory(titleNewCategory)
                                 titleNewCategory = ""
                             }
                             showAddCategoryDialog = false
@@ -127,7 +127,7 @@ fun CreateTodoScreen(
                     } else {
                         titleError = false
 
-                        // ✅ GỌI API TẠO TODO
+                        // ✅ Gọi API tạo TODO với categoryId thật
                         val newTask = HomeUiState(
                             id = 0,
                             title = title,
@@ -136,7 +136,8 @@ fun CreateTodoScreen(
                             duedate = duedate,
                             priority = selectedPriority,
                             isDone = false,
-                            category = selectedCategory?.label ?: "Default"
+                            category = selectedCategory?.name ?: "Default",
+                            categoryId = selectedCategory?.id ?: (categories.firstOrNull()?.id ?: 1)
                         )
                         homeViewModel.addTodo(newTask)
 
@@ -226,11 +227,10 @@ fun CreateTodoScreen(
                 ) {
                     items(categoriesFiltered) { category ->
                         CategoryChip(
-                            category = category,
+                            categoryName = category.name,
                             selected = category == selectedCategory,
                             onClick = {
-                                if (selectedCategory == category) selectedCategory = null
-                                else selectedCategory = category
+                                selectedCategory = if (selectedCategory == category) null else category
                             },
                             cardColor = cardColor,
                             textColor = textColor
@@ -545,7 +545,7 @@ private fun PrioritySelector(
 
 @Composable
 private fun CategoryChip(
-    category: TodoCategory, selected: Boolean, onClick: () -> Unit, cardColor: Color = SurfaceWhite, textColor: Color = InkBrown
+    categoryName: String, selected: Boolean, onClick: () -> Unit, cardColor: Color = SurfaceWhite, textColor: Color = InkBrown
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -565,7 +565,7 @@ private fun CategoryChip(
         )
         Spacer(Modifier.width(10.dp))
         Text(
-            category.label, fontSize = 13.sp,
+            categoryName, fontSize = 13.sp,
             color = if (selected) AccentTerracottaDeep else textColor,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
         )

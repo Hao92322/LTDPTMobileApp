@@ -32,7 +32,8 @@ class ApiTodoRepository(private val context: Context) {
             } ?: LocalDateTime.now(),
             priority = item.priority,
             isDone = item.isCompleted,
-            category = "Default"
+            category = "Default",
+            categoryId = item.categoryId ?: 1
         )
     }
 
@@ -61,7 +62,7 @@ class ApiTodoRepository(private val context: Context) {
                 description = task.subtitle,
                 dueDate = task.duedate.format(DateTimeFormatter.ISO_DATE_TIME),
                 priority = task.priority,
-                categoryId = 1,
+                categoryId = task.categoryId,  // ✅ Dùng categoryId thật
                 date = task.createdate.toLocalDate().toString(),
                 isCompleted = task.isDone
             )
@@ -81,7 +82,7 @@ class ApiTodoRepository(private val context: Context) {
                 description = task.subtitle,
                 dueDate = task.duedate.format(DateTimeFormatter.ISO_DATE_TIME),
                 priority = task.priority,
-                categoryId = 1,
+                categoryId = task.categoryId,  // ✅ Dùng categoryId thật
                 date = task.createdate.toLocalDate().toString(),
                 isCompleted = task.isDone
             )

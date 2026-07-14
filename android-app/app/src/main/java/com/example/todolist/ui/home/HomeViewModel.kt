@@ -3,6 +3,8 @@ package com.example.todolist.ui.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todolist.data.api.Category
+import com.example.todolist.data.repository.ApiCategoryRepository
 import com.example.todolist.data.repository.ApiTodoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,15 +14,42 @@ import kotlinx.coroutines.launch
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ApiTodoRepository(application.applicationContext)
+    private val categoryRepository = ApiCategoryRepository(application.applicationContext)
 
     private val _todoList = MutableStateFlow<List<HomeUiState>>(emptyList())
     val todoList: StateFlow<List<HomeUiState>> = _todoList.asStateFlow()
+
+    private val _categoryList = MutableStateFlow<List<Category>>(emptyList())
+    val categoryList: StateFlow<List<Category>> = _categoryList.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
         loadTodos()
+        loadCategories()
+    }
+
+    fun loadCategories() {
+        viewModelScope.launch {
+            try {
+                _categoryList.value = categoryRepository.getCategories()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun createCategory(name: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                categoryRepository.createCategory(name)
+                loadCategories()
+                onDone()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun loadTodos() {

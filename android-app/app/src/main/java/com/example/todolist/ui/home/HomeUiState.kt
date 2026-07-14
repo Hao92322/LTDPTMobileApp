@@ -10,5 +10,6 @@ data class HomeUiState(
     val duedate: LocalDateTime,
     val priority: Int,
     val isDone: Boolean,
-    val category: String = "Daily routine"
+    val category: String = "Daily routine",
+    val categoryId: Int = 1  // ID thật từ API
 )
