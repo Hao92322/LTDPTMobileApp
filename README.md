@@ -63,6 +63,4 @@ Một ứng dụng quản lý công việc và nhắc nhở thời gian thực (
 ---
 
 ## 👥 Đóng góp dự án
-Dự án được thực hiện nhằm mang lại trải nghiệm quản lý công việc và thói quen hàng ngày tốt nhất với tính thẩm mỹ tối đa. Mọi ý kiến đóng góp hoặc báo lỗi vui lòng mở Issue hoặc gửi Pull Request!
-
-Chúc bạn quản lý thời gian thật hiệu quả! 🎯
+Nâng tầm quản lý công việc và thói quen hàng ngày với giao diện tối giản, đầy cảm hứng. Dự án được phát triển theo hướng mã nguồn mở—mọi phản hồi, ý tưởng đóng góp hay báo lỗi từ cộng đồng đều là mảnh ghép quan trọng giúp chúng tôi hoàn thiện sản phẩm. Hãy cùng đồng hành bằng cách mở Issue hoặc gửi Pull Request cho dự án
