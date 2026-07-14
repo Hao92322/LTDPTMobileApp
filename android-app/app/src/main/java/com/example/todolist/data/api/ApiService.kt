@@ -43,10 +43,9 @@ interface ApiService {
     // TODO ITEM
     @GET("api/todoitem")
     suspend fun getTodoItems(
-        @Query("categoryId") categoryId: Int,
         @Query("page") page: Int = 1,
-        @Query("pageSize") pageSize: Int = 20,
-        @Query("search") search: String? = null,
+        @Query("pageSize") pageSize: Int = 100,
+        @Query("categoryId") categoryId: Int? = null,
         @Header("Authorization") token: String
     ): Response<ApiResponse<List<TodoItem>>>
 

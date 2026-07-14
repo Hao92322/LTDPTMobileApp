@@ -137,7 +137,7 @@ fun CreateTodoScreen(
                             priority = selectedPriority,
                             isDone = false,
                             category = selectedCategory?.name ?: "Default",
-                            categoryId = selectedCategory?.id ?: (categories.firstOrNull()?.id ?: 1)
+                            categoryId = selectedCategory?.id ?: (categories.firstOrNull()?.id ?: 0)
                         )
                         homeViewModel.addTodo(newTask)
 

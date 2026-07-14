@@ -1,6 +1,7 @@
 package com.example.todolist.data.repository
 
 import android.content.Context
+import com.example.todolist.data.api.CategoryRequest
 import com.example.todolist.data.api.RetrofitClient
 import com.example.todolist.data.api.TodoItem
 import com.example.todolist.data.api.TodoItemRequest
@@ -19,7 +20,28 @@ class ApiTodoRepository(private val context: Context) {
         return "Bearer $token"
     }
 
-    private fun mapToHomeUiState(item: TodoItem): HomeUiState {
+    // ✅ Tự tạo category mặc định nếu user chưa có category nào
+    suspend fun ensureDefaultCategory(): Int = withContext(Dispatchers.IO) {
+        try {
+            val catResponse = apiService.getCategories(token = getToken())
+            if (catResponse.isSuccessful && catResponse.body()?.success == true) {
+                val cats = catResponse.body()?.data ?: emptyList()
+                if (cats.isNotEmpty()) {
+                    return@withContext cats.first().id
+                }
+            }
+            // Chưa có → tạo category mặc định
+            val createResp = apiService.createCategory(CategoryRequest("Công việc chung"), getToken())
+            if (createResp.isSuccessful && createResp.body()?.success == true) {
+                return@withContext createResp.body()?.data?.id ?: 1
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return@withContext 1
+    }
+
+    private fun mapToHomeUiState(item: TodoItem, categoryName: String = "Default"): HomeUiState {
         return HomeUiState(
             id = item.id,
             title = item.title,
@@ -32,20 +54,28 @@ class ApiTodoRepository(private val context: Context) {
             } ?: LocalDateTime.now(),
             priority = item.priority,
             isDone = item.isCompleted,
-            category = "Default",
+            category = categoryName,
             categoryId = item.categoryId ?: 1
         )
     }
 
+    // ✅ Lấy tất cả todos (không cần categoryId - backend hỗ trợ nullable categoryId)
     suspend fun getTodos(): List<HomeUiState> = withContext(Dispatchers.IO) {
         try {
-            val response = apiService.getTodoItems(
-                categoryId = 1,
-                token = getToken()
-            )
+            // Load categories để map tên
+            val catResponse = apiService.getCategories(token = getToken())
+            val categoryMap: Map<Int, String> = if (catResponse.isSuccessful) {
+                catResponse.body()?.data?.associate { it.id to it.name } ?: emptyMap()
+            } else emptyMap()
+
+            // Load tất cả todos (không truyền categoryId)
+            val response = apiService.getTodoItems(token = getToken())
 
             if (response.isSuccessful && response.body()?.success == true) {
-                response.body()?.data?.map { mapToHomeUiState(it) } ?: emptyList()
+                response.body()?.data?.map { item ->
+                    val catName = categoryMap[item.categoryId] ?: "Default"
+                    mapToHomeUiState(item, catName)
+                } ?: emptyList()
             } else {
                 emptyList()
             }
@@ -57,12 +87,16 @@ class ApiTodoRepository(private val context: Context) {
 
     suspend fun addTask(task: HomeUiState): Boolean = withContext(Dispatchers.IO) {
         try {
+            // ✅ Đảm bảo có category trước khi tạo task
+            val categoryId = if (task.categoryId > 0) task.categoryId
+                             else ensureDefaultCategory()
+
             val request = TodoItemRequest(
                 title = task.title,
                 description = task.subtitle,
                 dueDate = task.duedate.format(DateTimeFormatter.ISO_DATE_TIME),
                 priority = task.priority,
-                categoryId = task.categoryId,  // ✅ Dùng categoryId thật
+                categoryId = categoryId,
                 date = task.createdate.toLocalDate().toString(),
                 isCompleted = task.isDone
             )
@@ -82,7 +116,7 @@ class ApiTodoRepository(private val context: Context) {
                 description = task.subtitle,
                 dueDate = task.duedate.format(DateTimeFormatter.ISO_DATE_TIME),
                 priority = task.priority,
-                categoryId = task.categoryId,  // ✅ Dùng categoryId thật
+                categoryId = task.categoryId,
                 date = task.createdate.toLocalDate().toString(),
                 isCompleted = task.isDone
             )
