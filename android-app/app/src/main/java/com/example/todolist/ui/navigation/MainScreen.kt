@@ -41,6 +41,7 @@ import com.example.todolist.ui.home.HomeViewModel
 import com.example.todolist.ui.profile.ProfileScreen
 import com.example.todolist.ui.theme.*
 import com.example.todolist.ui.todo.CreateTodoScreen
+import com.example.todolist.ui.component.bounceClick
 
 data class NavItem(val icon: ImageVector, val label: String)
 
@@ -121,6 +122,11 @@ fun MainScreen() {
                         val context = LocalContext.current
                         ProfileScreen(
                             onLogout = {
+                                // Hủy tất cả alarm trước khi đăng xuất
+                                val todos = homeViewModel.todoList.value
+                                todos.forEach { task ->
+                                    com.example.todolist.ui.reminder.ReminderScheduler.cancelAlarm(context, task.id)
+                                }
                                 TokenManager.clearToken(context)
                                 isAuthenticated = false
                             },
@@ -509,7 +515,7 @@ private fun CurvedBottomNav(
                 .shadow(8.dp, CircleShape)
                 .clip(CircleShape)
                 .background(Brush.linearGradient(listOf(AccentTerracotta, AccentTerracottaDeep)))
-                .clickable { onAddClick() },
+                .bounceClick { onAddClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Filled.Add, contentDescription = "Add new habit", tint = SurfaceWhite, modifier = Modifier.size(28.dp))
@@ -520,7 +526,10 @@ private fun CurvedBottomNav(
 @Composable
 private fun NavIconButton(item: NavItem, selected: Boolean, onClick: () -> Unit, isDark: Boolean) {
     val mutedColor = if (isDark) Color(0xFF6B5C52) else TextMuted
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onClick() }) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.bounceClick { onClick() }
+    ) {
         Icon(
             imageVector = item.icon, contentDescription = item.label,
             tint = if (selected) AccentTerracotta else mutedColor, modifier = Modifier.size(22.dp)

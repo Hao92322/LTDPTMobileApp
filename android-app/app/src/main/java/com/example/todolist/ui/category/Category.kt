@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.example.todolist.ui.component.SearchRowCategory
 import com.example.todolist.ui.home.HomeUiState
 import com.example.todolist.ui.LocalAppState
+import com.example.todolist.ui.component.bounceClick
 import com.example.todolist.ui.theme.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -174,7 +175,7 @@ private fun ManageTopBar(onBack: () -> Unit, isDark: Boolean = false) {
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(iconBg)
-                .clickable { onBack() },
+                .bounceClick { onBack() },
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = textColor, modifier = Modifier.size(18.dp))
@@ -219,7 +220,7 @@ private fun CategoryCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = !isEditing) { onToggleExpand() }
+                    .bounceClick(enabled = !isEditing) { onToggleExpand() }
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -326,7 +327,7 @@ private fun IconActionButton(
             .size(30.dp)
             .clip(CircleShape)
             .background(bg)
-            .clickable { onClick() },
+            .bounceClick { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
@@ -369,7 +370,7 @@ private fun MiniTodoRow(
                 .clip(CircleShape)
                 .background(if (todo.isDone) StreakOrange else SurfaceWhite)
                 .border(1.dp, if (todo.isDone) StreakOrange else TextMuted.copy(alpha = 0.4f), CircleShape)
-                .clickable { onToggleStatus() },
+                .bounceClick { onToggleStatus() },
             contentAlignment = Alignment.Center
         ) {
             if (todo.isDone) {

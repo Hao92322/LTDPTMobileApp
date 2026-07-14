@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.data.api.Category
 import com.example.todolist.ui.component.BaseSearchBar
+import com.example.todolist.ui.component.bounceClick
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.home.HomeViewModel
 import com.example.todolist.ui.home.HomeUiState
@@ -277,7 +278,7 @@ private fun CategorySearchBar(
                 .size(52.dp)
                 .clip(CircleShape)
                 .background(Brush.linearGradient(listOf(AccentTerracotta, AccentTerracottaDeep)))
-                .clickable { onClickAddCategory() },
+                .bounceClick { onClickAddCategory() },
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Default.Add, contentDescription = "addCategory", tint = SurfaceWhite)
@@ -304,7 +305,7 @@ private fun AddTodoTopBar(onBack: () -> Unit, isDark: Boolean = false, lang: Str
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(iconBg)
-                .clickable { onBack() },
+                .bounceClick { onBack() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -342,7 +343,7 @@ private fun SaveBar(onSave: () -> Unit, isDark: Boolean = false, lang: String = 
                 .padding(horizontal = 20.dp, vertical = 16.dp)
                 .clip(RoundedCornerShape(28.dp))
                 .background(Brush.linearGradient(listOf(AccentTerracotta, AccentTerracottaDeep)))
-                .clickable { onSave() },
+                .bounceClick { onSave() },
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -478,7 +479,7 @@ private fun PickerField(
             .clip(RoundedCornerShape(16.dp))
             .background(cardColor)
             .border(1.dp, InputBorder, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
+            .bounceClick { onClick() }
             .padding(horizontal = 14.dp, vertical = 14.dp)
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = AccentTerracotta, modifier = Modifier.size(18.dp))
@@ -527,7 +528,7 @@ private fun PrioritySelector(
                         color = if (isSelected) option.color else InputBorder,
                         shape = RoundedCornerShape(16.dp)
                     )
-                    .clickable { onSelect(option.level) }
+                    .bounceClick { onSelect(option.level) }
                     .padding(vertical = 12.dp, horizontal = 6.dp)
             ) {
                 val optionLabel = when (option.level) {
@@ -561,7 +562,7 @@ private fun CategoryChip(
                 color = if (selected) AccentTerracotta else InputBorder,
                 shape = RoundedCornerShape(20.dp)
             )
-            .clickable { onClick() }.height(48.dp).padding(horizontal = 14.dp)
+            .bounceClick { onClick() }.height(48.dp).padding(horizontal = 14.dp)
     ) {
         Icon(
             imageVector = Icons.Filled.Circle, contentDescription = null,

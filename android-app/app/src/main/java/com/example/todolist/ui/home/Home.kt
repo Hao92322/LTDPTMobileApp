@@ -94,6 +94,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.component.BaseSearchBar
+import com.example.todolist.ui.component.bounceClick
 import com.example.todolist.data.repository.TokenManager
 import com.example.todolist.ui.theme.AccentTerracotta
 import com.example.todolist.ui.theme.AccentTerracottaDeep
@@ -1174,7 +1175,7 @@ private fun WeekDaySelector(
                     .width(46.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color.Transparent)
-                    .clickable { onSelect(day) }
+                    .bounceClick { onSelect(day) }
                     .padding(vertical = 4.dp)
             ) {
                 Text(
@@ -1357,10 +1358,7 @@ private fun RoutineTaskRow(
                         .clip(CircleShape)
                         .background(if (task.isDone) StreakOrange else SurfaceWhite)
                         .border(1.dp, if (task.isDone) Color.Transparent else TextMuted.copy(alpha = 0.4f), CircleShape)
-                        .clickable(
-                            indication = ripple(bounded = true, radius = 14.dp),
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) {
+                        .bounceClick {
                             showGreenTick = true
                             onItemClick()
                         },
@@ -1398,11 +1396,33 @@ private fun RoutineTaskRow(
 
             Spacer(Modifier.width(12.dp))
 
+            val appState = LocalAppState.current
+            val isDark = appState.isDarkMode
+            val priorityBgColor = if (task.isDone) {
+                if (isDark) Color(0xFF1E3A24) else Color(0xFFE8F5E9)
+            } else {
+                when (task.priority) {
+                    0 -> if (isDark) Color(0xFF1F2F23) else Color(0xFFF5FBF7)
+                    1 -> if (isDark) Color(0xFF382C1E) else Color(0xFFFEFAF2)
+                    else -> if (isDark) Color(0xFF3B1E1E) else Color(0xFFFDF5F5)
+                }
+            }
+            val priorityBorderColor = if (task.isDone) {
+                Color.Transparent
+            } else {
+                when (task.priority) {
+                    0 -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                    1 -> Color(0xFFFF9800).copy(alpha = 0.3f)
+                    else -> Color(0xFFF44336).copy(alpha = 0.4f)
+                }
+            }
+
             // Task card
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = if (task.isDone) Color(0xFFE8F5E9) else cardColor,
-                shadowElevation = if (task.isDone) 0.dp else 1.dp,
+                color = priorityBgColor,
+                shadowElevation = if (task.isDone) 0.dp else 2.dp,
+                border = if (task.isDone) null else androidx.compose.foundation.BorderStroke(1.dp, priorityBorderColor),
                 tonalElevation = 0.dp,
                 modifier = Modifier.weight(1f)
             ) {
@@ -1491,13 +1511,20 @@ private fun RoutineTaskRow(
                             .padding(horizontal = 14.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Priority color indicator bar
+                        // Elegant priority indicator bar (pill shape with gradient)
                         Box(
                             modifier = Modifier
-                                .width(4.dp)
+                                .width(5.dp)
                                 .height(28.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(priorityColor)
+                                .clip(RoundedCornerShape(2.5.dp))
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            priorityColor,
+                                            priorityColor.copy(alpha = 0.6f)
+                                        )
+                                    )
+                                )
                         )
                         Spacer(Modifier.width(12.dp))
 
