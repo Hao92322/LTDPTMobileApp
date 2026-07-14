@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ToDoApp_BackEnd.Models
@@ -28,9 +28,9 @@ namespace ToDoApp_BackEnd.Models
         // Thời điểm tạo (để sắp xếp theo ngày)
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         [Required]
-        public int? CategoryId { get; set; } // vì todo có thể ko cần todo vẫn tồn tại dựa trên user 
+        public int CategoryId { get; set; } // Bắt buộc phải có danh mục
         [ForeignKey(nameof(CategoryId))]
-        public Category? Category { get; set; }
+        public Category Category { get; set; }
         
         public string UserId { get; set; }
         [ForeignKey(nameof(UserId))]

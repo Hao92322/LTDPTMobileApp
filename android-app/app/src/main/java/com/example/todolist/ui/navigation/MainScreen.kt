@@ -33,6 +33,7 @@ import com.example.todolist.ui.LocalAppState
 import com.example.todolist.ui.auth.AuthScreen
 import com.example.todolist.ui.category.CategoryManageScreen
 import com.example.todolist.ui.home.HomeScreen
+import com.example.todolist.ui.home.HomeViewModel
 import com.example.todolist.ui.profile.ProfileScreen
 import com.example.todolist.ui.theme.*
 import com.example.todolist.ui.todo.CreateTodoScreen
@@ -72,6 +73,8 @@ fun MainScreen() {
             }
         }
 
+        val homeViewModel: HomeViewModel = viewModel()
+
         if (!isAuthenticated) {
             // ✅ ĐÃ SỬA: AuthScreen giờ chỉ nhận onLoginSuccess
             AuthScreen(
@@ -81,7 +84,8 @@ fun MainScreen() {
             // ✅ ĐÃ SỬA: CreateTodoScreen giờ không cần onSave callback nữa
             // Nó tự gọi homeViewModel.addTodo() bên trong
             CreateTodoScreen(
-                onBack = { showCreateTodo = false }
+                onBack = { showCreateTodo = false },
+                homeViewModel = homeViewModel
             )
         } else {
             Scaffold(
@@ -98,9 +102,13 @@ fun MainScreen() {
                 when (selectedNav) {
                     0 -> HomeScreen(
                         innerPadding = innerPadding,
+                        viewModel = homeViewModel,
                         onProfileClick = { selectedNav = 4 }
                     )
-                    1 -> CategoryManageScreen(onBack = { selectedNav = 0 })
+                    1 -> CategoryManageScreen(
+                        onBack = { selectedNav = 0 },
+                        homeViewModel = homeViewModel
+                    )
                     3 -> InsightsScreen(innerPadding = innerPadding)
                     4 -> ProfileScreen(onLogout = { isAuthenticated = false })
                 }

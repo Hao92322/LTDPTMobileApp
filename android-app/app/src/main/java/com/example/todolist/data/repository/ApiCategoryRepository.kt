@@ -43,4 +43,24 @@ class ApiCategoryRepository(private val context: Context) {
             null
         }
     }
+
+    suspend fun updateCategory(id: Int, name: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.updateCategory(id, CategoryRequest(name), getToken())
+            response.isSuccessful && response.body()?.success == true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun deleteCategory(id: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.deleteCategory(id, getToken())
+            response.isSuccessful
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }

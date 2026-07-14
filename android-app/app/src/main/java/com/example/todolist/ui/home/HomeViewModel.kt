@@ -52,6 +52,34 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateCategory(id: Int, name: String) {
+        viewModelScope.launch {
+            try {
+                val success = categoryRepository.updateCategory(id, name)
+                if (success) {
+                    loadCategories()
+                    loadTodos()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteCategory(id: Int) {
+        viewModelScope.launch {
+            try {
+                val success = categoryRepository.deleteCategory(id)
+                if (success) {
+                    loadCategories()
+                    loadTodos()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun loadTodos() {
         viewModelScope.launch {
             _isLoading.value = true

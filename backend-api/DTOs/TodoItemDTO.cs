@@ -1,4 +1,4 @@
-﻿namespace ToDoApp_BackEnd.DTOs
+namespace ToDoApp_BackEnd.DTOs
 {
     public class TodoItemDTO
     {
@@ -9,6 +9,6 @@
         public bool IsCompleted { get; set; }
         public DateTime? DueDate { get; set; }
         public int Priority { get; set; }
-        public int? CategoryId { get; set; } // ko cần cate vẫn có todo base on User 
+        public int CategoryId { get; set; } // Bắt buộc phải có danh mục
     }
 }

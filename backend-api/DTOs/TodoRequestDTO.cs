@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace ToDoApp_BackEnd.DTOs
 {
@@ -21,7 +21,7 @@ namespace ToDoApp_BackEnd.DTOs
         public DateTime Date { get; set; } // tim ma user pick ngay cu the
 
         [Required(ErrorMessage = "Phải chọn danh mục cho công việc này")]
-        public int? CategoryId { get; set; } // user có thể ko chọn cate 
+        public int CategoryId { get; set; } // Bắt buộc phải có danh mục
 
     }
 }

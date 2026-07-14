@@ -36,15 +36,20 @@ import com.example.todolist.ui.theme.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.ui.home.HomeViewModel
+
 data class CategoryUi(
-    val id: String,
+    val id: Int,
     val name: String,
     val todos: List<HomeUiState>
 )
 
 @Composable
 fun CategoryManageScreen(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    homeViewModel: HomeViewModel = viewModel()
 ) {
     val appState = LocalAppState.current
     val isDark = appState.isDarkMode
@@ -52,9 +57,22 @@ fun CategoryManageScreen(
     val cardColor = if (isDark) Color(0xFF2C1F14) else SurfaceWhite
     val textColor = if (isDark) Color(0xFFF5E6D3) else InkBrown
 
-    var categoriesState by remember { mutableStateOf(MockCategories) }
+    // ✅ Đọc từ API
+    val categories by homeViewModel.categoryList.collectAsStateWithLifecycle()
+    val todos by homeViewModel.todoList.collectAsStateWithLifecycle()
+
+    val categoriesState = remember(categories, todos) {
+        categories.map { category ->
+            CategoryUi(
+                id = category.id,
+                name = category.name,
+                todos = todos.filter { it.categoryId == category.id }
+            )
+        }
+    }
+
     var query by remember { mutableStateOf("") }
-    var expandedIds by remember { mutableStateOf(setOf<String>()) }
+    var expandedIds by remember { mutableStateOf(setOf<Int>()) }
     var pendingDelete by remember { mutableStateOf<CategoryUi?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     val filtered = remember(categoriesState, query) {
@@ -63,6 +81,12 @@ fun CategoryManageScreen(
             cat.name.contains(query, ignoreCase = true) ||
                     cat.todos.any { it.title.contains(query, ignoreCase = true) }
         }
+    }
+
+    // Refresh categories & todos when opening
+    LaunchedEffect(Unit) {
+        homeViewModel.loadCategories()
+        homeViewModel.loadTodos()
     }
 
     Scaffold(containerColor = bgColor, topBar = { ManageTopBar(onBack, isDark) }) { innerPadding ->
@@ -96,9 +120,7 @@ fun CategoryManageScreen(
                                     expandedIds - category.id else expandedIds + category.id
                             },
                             onRename = { newName ->
-                                categoriesState = categoriesState.map {
-                                    if (it.id == category.id) it.copy(name = newName) else it
-                                }
+                                homeViewModel.updateCategory(category.id, newName)
                             },
                             onDeleteRequest = { pendingDelete = category },
                             isDark = isDark
@@ -112,12 +134,7 @@ fun CategoryManageScreen(
     if (showCreateDialog) {
         CreateCategoryDialog(
             onConfirm = { name ->
-                val newCategory = CategoryUi(
-                    id = java.util.UUID.randomUUID().toString(),
-                    name = name,
-                    todos = emptyList()
-                )
-                categoriesState = categoriesState + newCategory
+                homeViewModel.createCategory(name)
                 showCreateDialog = false
             },
             onDismiss = { showCreateDialog = false }
@@ -128,7 +145,7 @@ fun CategoryManageScreen(
         DeleteConfirmDialog(
             categoryName = target.name,
             onConfirm = {
-                categoriesState = categoriesState.filter { it.id != target.id }
+                homeViewModel.deleteCategory(target.id)
                 pendingDelete = null
             },
             onDismiss = { pendingDelete = null }
