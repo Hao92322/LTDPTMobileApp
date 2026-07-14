@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,7 +42,7 @@ data class NavItem(val icon: ImageVector, val label: String)
 val navItems = listOf(
     NavItem(Icons.Filled.Home, "Home"),
     NavItem(Icons.Filled.CalendarMonth, "Calendar"),
-    NavItem(Icons.Filled.Add, "Add"), // center, drawn raised
+    NavItem(Icons.Filled.Add, "Add"),
     NavItem(Icons.Filled.Insights, "Insights"),
     NavItem(Icons.Filled.Person, "Profile"),
 )
@@ -52,14 +54,13 @@ fun MainScreen() {
     CompositionLocalProvider(LocalAppState provides appState) {
         val isDark = appState.isDarkMode
 
-        // Animate background color between light and dark
         val bgColor by animateColorAsState(
             targetValue = if (isDark) Color(0xFF1A120B) else BackgroundCream,
             animationSpec = tween(400),
             label = "bg"
         )
 
-        var isAuthenticated by remember { mutableStateOf(true) }
+        var isAuthenticated by remember { mutableStateOf(false) } // ✅ Đổi thành false để test login
         var selectedNav by remember { mutableIntStateOf(0) }
         var showCreateTodo by remember { mutableStateOf(false) }
 
@@ -72,14 +73,15 @@ fun MainScreen() {
         }
 
         if (!isAuthenticated) {
+            // ✅ ĐÃ SỬA: AuthScreen giờ chỉ nhận onLoginSuccess
             AuthScreen(
-                onLogin = { _, _ -> isAuthenticated = true },
-                onRegister = { _, _, _ -> isAuthenticated = true }
+                onLoginSuccess = { isAuthenticated = true }
             )
         } else if (showCreateTodo) {
+            // ✅ ĐÃ SỬA: CreateTodoScreen giờ không cần onSave callback nữa
+            // Nó tự gọi homeViewModel.addTodo() bên trong
             CreateTodoScreen(
-                onBack = { showCreateTodo = false },
-                onSave = { showCreateTodo = false }
+                onBack = { showCreateTodo = false }
             )
         } else {
             Scaffold(
@@ -94,7 +96,10 @@ fun MainScreen() {
                 }
             ) { innerPadding ->
                 when (selectedNav) {
-                    0 -> HomeScreen(innerPadding = innerPadding)
+                    0 -> HomeScreen(
+                        innerPadding = innerPadding,
+                        onProfileClick = { selectedNav = 4 }
+                    )
                     1 -> CategoryManageScreen(onBack = { selectedNav = 0 })
                     3 -> InsightsScreen(innerPadding = innerPadding)
                     4 -> ProfileScreen(onLogout = { isAuthenticated = false })
@@ -115,7 +120,6 @@ fun InsightsScreen(innerPadding: PaddingValues) {
     val textPrimary = if (isDark) Color(0xFFF5E6D3) else InkBrown
     val textSecondary = if (isDark) Color(0xFF9C8C7E) else TextMuted
 
-    // Sample weekly data
     val weeklyData = listOf(3, 5, 2, 6, 4, 1, 3)
     val prevWeekData = listOf(2, 4, 3, 5, 2, 2, 4)
     val days = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
@@ -144,7 +148,6 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Title
         Text(
             text = if (appState.language == "vi") "Thống kê" else "Insights",
             fontSize = 24.sp,
@@ -152,7 +155,7 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             color = textPrimary
         )
 
-        // ── StatsRow (3 boxes) ──
+        // Stats Row
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -162,62 +165,39 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             val labelBest = if (appState.language == "vi") "Chuỗi kỷ lục" else "Best streak"
 
             StatCard(
-                icon = Icons.Filled.TaskAlt,
-                value = "128",
-                label = labelDone,
-                modifier = Modifier.weight(1f),
-                cardColor = cardBg,
-                textPrimary = textPrimary
+                icon = Icons.Filled.TaskAlt, value = "128", label = labelDone,
+                modifier = Modifier.weight(1f), cardColor = cardBg, textPrimary = textPrimary
             )
             StatCard(
-                icon = Icons.Filled.LocalFireDepartment,
-                value = "6d",
-                label = labelCurrent,
-                modifier = Modifier.weight(1f),
-                cardColor = cardBg,
-                textPrimary = textPrimary
+                icon = Icons.Filled.LocalFireDepartment, value = "6d", label = labelCurrent,
+                modifier = Modifier.weight(1f), cardColor = cardBg, textPrimary = textPrimary
             )
             StatCard(
-                icon = Icons.Filled.EmojiEvents,
-                value = "21d",
-                label = labelBest,
-                modifier = Modifier.weight(1f),
-                cardColor = cardBg,
-                textPrimary = textPrimary
+                icon = Icons.Filled.EmojiEvents, value = "21d", label = labelBest,
+                modifier = Modifier.weight(1f), cardColor = cardBg, textPrimary = textPrimary
             )
         }
 
-        // ── Tổng quan tuần ──────────────────────────────────────────────────
+        // Weekly Overview
         Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = cardBg,
-            shadowElevation = if (isDark) 0.dp else 2.dp,
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(20.dp), color = cardBg,
+            shadowElevation = if (isDark) 0.dp else 2.dp, modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
                     text = if (appState.language == "vi") "Tuần này" else "This Week",
-                    fontSize = 13.sp,
-                    color = textSecondary
+                    fontSize = 13.sp, color = textSecondary
                 )
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = "$thisWeekTotal",
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = textPrimary
-                    )
+                    Text(text = "$thisWeekTotal", fontSize = 36.sp, fontWeight = FontWeight.Bold, color = textPrimary)
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = if (appState.language == "vi") "nhiệm vụ hoàn thành" else "tasks done",
-                        fontSize = 13.sp,
-                        color = textSecondary,
-                        modifier = Modifier.padding(bottom = 6.dp)
+                        fontSize = 13.sp, color = textSecondary, modifier = Modifier.padding(bottom = 6.dp)
                     )
                 }
                 Spacer(Modifier.height(4.dp))
-                // Trend badge
                 val isUp = percentChange >= 0
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -226,8 +206,9 @@ fun InsightsScreen(innerPadding: PaddingValues) {
                         .background(if (isUp) Color(0xFFDCEFD9) else Color(0xFFFFE0E0))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
+                    // ✅ FIX DEPRECATED: Dùng AutoMirrored
                     Icon(
-                        imageVector = if (isUp) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown,
+                        imageVector = if (isUp) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                         contentDescription = null,
                         tint = if (isUp) Color(0xFF4CAF50) else Color(0xFFE53935),
                         modifier = Modifier.size(14.dp)
@@ -243,40 +224,28 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             }
         }
 
-        // ── Biểu đồ cột ─────────────────────────────────────────────────────
+        // Bar Chart
         Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = cardBg,
-            shadowElevation = if (isDark) 0.dp else 2.dp,
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(20.dp), color = cardBg,
+            shadowElevation = if (isDark) 0.dp else 2.dp, modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
                     text = if (appState.language == "vi") "Hoạt động theo ngày" else "Daily Activity",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textPrimary
+                    fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary
                 )
                 Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     weeklyData.forEachIndexed { index, count ->
                         val fraction = count / maxVal.toFloat()
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier.height(80.dp).width(22.dp),
-                                contentAlignment = Alignment.BottomCenter
-                            ) {
+                            Box(modifier = Modifier.height(80.dp).width(22.dp), contentAlignment = Alignment.BottomCenter) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height((80 * fraction).dp.coerceAtLeast(6.dp))
                                         .clip(RoundedCornerShape(6.dp))
-                                        .background(
-                                            Brush.verticalGradient(listOf(PeachEnd, AccentTerracotta))
-                                        )
+                                        .background(Brush.verticalGradient(listOf(PeachEnd, AccentTerracotta)))
                                 )
                             }
                             Spacer(Modifier.height(6.dp))
@@ -287,87 +256,54 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             }
         }
 
-        // ── Top Category ─────────────────────────────────────────────────────
+        // Top Category
         if (topCategory != null) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = topCategory.second,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Surface(shape = RoundedCornerShape(20.dp), color = topCategory.second, modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.5f)),
+                        modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.5f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.EmojiEvents,
-                            contentDescription = null,
-                            tint = AccentTerracottaDeep,
-                            modifier = Modifier.size(26.dp)
-                        )
+                        Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = AccentTerracottaDeep, modifier = Modifier.size(26.dp))
                     }
                     Spacer(Modifier.width(14.dp))
                     Column {
                         Text(
                             text = if (appState.language == "vi") "Danh mục nổi bật" else "Top Category",
-                            fontSize = 12.sp,
-                            color = InkBrown.copy(alpha = 0.6f)
+                            fontSize = 12.sp, color = InkBrown.copy(alpha = 0.6f)
                         )
-                        Text(
-                            text = topCategory.first,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = InkBrown
-                        )
+                        Text(text = topCategory.first, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = InkBrown)
                         Text(
                             text = "${topCategory.third} ${if (appState.language == "vi") "nhiệm vụ" else "tasks"}",
-                            fontSize = 12.sp,
-                            color = InkBrown.copy(alpha = 0.7f)
+                            fontSize = 12.sp, color = InkBrown.copy(alpha = 0.7f)
                         )
                     }
                 }
             }
         }
 
-        // ── Category breakdown ───────────────────────────────────────────────
+        // Category Breakdown
         Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = cardBg,
-            shadowElevation = if (isDark) 0.dp else 2.dp,
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(20.dp), color = cardBg,
+            shadowElevation = if (isDark) 0.dp else 2.dp, modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
                     text = if (appState.language == "vi") "Theo danh mục" else "By Category",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textPrimary
+                    fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary
                 )
                 Spacer(Modifier.height(14.dp))
                 val total = categoryInsights.sumOf { it.third }.coerceAtLeast(1)
                 categoryInsights.forEachIndexed { index, (name, color, count) ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(color.copy(alpha = 1f).let {
-                                    // darken slightly for visibility
-                                    Color(
-                                        (it.red * 0.7f).coerceIn(0f, 1f),
-                                        (it.green * 0.7f).coerceIn(0f, 1f),
-                                        (it.blue * 0.7f).coerceIn(0f, 1f)
-                                    )
-                                })
+                            modifier = Modifier.size(10.dp).clip(CircleShape).background(
+                                Color(
+                                    (color.red * 0.7f).coerceIn(0f, 1f),
+                                    (color.green * 0.7f).coerceIn(0f, 1f),
+                                    (color.blue * 0.7f).coerceIn(0f, 1f)
+                                )
+                            )
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(name, modifier = Modifier.weight(1f), fontSize = 13.sp, color = textPrimary)
@@ -376,18 +312,11 @@ fun InsightsScreen(innerPadding: PaddingValues) {
                     Spacer(Modifier.height(6.dp))
                     val fraction = count / total.toFloat()
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))
                             .background(if (isDark) Color(0xFF3D2B1F) else BackgroundCream)
                     ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth(fraction)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(color)
+                            modifier = Modifier.fillMaxWidth(fraction).height(6.dp).clip(RoundedCornerShape(3.dp)).background(color)
                         )
                     }
                     if (index != categoryInsights.lastIndex) Spacer(Modifier.height(12.dp))
@@ -395,29 +324,19 @@ fun InsightsScreen(innerPadding: PaddingValues) {
             }
         }
 
-        // ── Gợi ý thông minh ─────────────────────────────────────────────────
+        // Smart Tip
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = if (isDark) Color(0xFF2C1F14) else Color(0xFFFFF8F0),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Lightbulb,
-                    contentDescription = null,
-                    tint = StreakOrange,
-                    modifier = Modifier.size(22.dp)
-                )
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                Icon(Icons.Filled.Lightbulb, contentDescription = null, tint = StreakOrange, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
                         text = if (appState.language == "vi") "Gợi ý" else "Tip",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = StreakOrange
+                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = StreakOrange
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -425,9 +344,7 @@ fun InsightsScreen(innerPadding: PaddingValues) {
                             "Bạn thường bỏ lỡ Fitness vào cuối tuần. Hãy đặt nhắc nhở vào T7!"
                         else
                             "You tend to skip Fitness on weekends. Try setting a reminder for Saturday!",
-                        fontSize = 13.sp,
-                        color = textSecondary,
-                        lineHeight = 18.sp
+                        fontSize = 13.sp, color = textSecondary, lineHeight = 18.sp
                     )
                 }
             }
@@ -446,19 +363,11 @@ private fun CurvedBottomNav(
 ) {
     val navBg = if (isDark) Color(0xFF2C1F14) else SurfaceWhite
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(86.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxWidth().height(86.dp)) {
         Surface(
-            color = navBg,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            color = navBg, shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             shadowElevation = 12.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(72.dp)
-                .align(Alignment.BottomCenter)
+            modifier = Modifier.fillMaxWidth().height(72.dp).align(Alignment.BottomCenter)
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -469,17 +378,11 @@ private fun CurvedBottomNav(
                     if (index == 2) {
                         Spacer(modifier = Modifier.width(56.dp))
                     } else {
-                        NavIconButton(
-                            item = item,
-                            selected = selectedIndex == index,
-                            onClick = { onSelect(index) },
-                            isDark = isDark
-                        )
+                        NavIconButton(item = item, selected = selectedIndex == index, onClick = { onSelect(index) }, isDark = isDark)
                     }
                 }
             }
         }
-        // Raised center button
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -490,12 +393,7 @@ private fun CurvedBottomNav(
                 .clickable { onAddClick() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add new habit",
-                tint = SurfaceWhite,
-                modifier = Modifier.size(28.dp)
-            )
+            Icon(Icons.Filled.Add, contentDescription = "Add new habit", tint = SurfaceWhite, modifier = Modifier.size(28.dp))
         }
     }
 }
@@ -503,21 +401,14 @@ private fun CurvedBottomNav(
 @Composable
 private fun NavIconButton(item: NavItem, selected: Boolean, onClick: () -> Unit, isDark: Boolean) {
     val mutedColor = if (isDark) Color(0xFF6B5C52) else TextMuted
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onClick() }) {
         Icon(
-            imageVector = item.icon,
-            contentDescription = item.label,
-            tint = if (selected) AccentTerracotta else mutedColor,
-            modifier = Modifier.size(22.dp)
+            imageVector = item.icon, contentDescription = item.label,
+            tint = if (selected) AccentTerracotta else mutedColor, modifier = Modifier.size(22.dp)
         )
         Spacer(Modifier.height(4.dp))
         Box(
-            modifier = Modifier
-                .size(4.dp)
-                .clip(CircleShape)
+            modifier = Modifier.size(4.dp).clip(CircleShape)
                 .background(if (selected) AccentTerracotta else Color.Transparent)
         )
     }
@@ -525,17 +416,11 @@ private fun NavIconButton(item: NavItem, selected: Boolean, onClick: () -> Unit,
 
 @Composable
 private fun StatCard(
-    icon: ImageVector,
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier,
-    cardColor: Color = SurfaceWhite,
-    textPrimary: Color = InkBrown
+    icon: ImageVector, value: String, label: String,
+    modifier: Modifier = Modifier, cardColor: Color = SurfaceWhite, textPrimary: Color = InkBrown
 ) {
     Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(cardColor)
+        modifier = modifier.clip(RoundedCornerShape(16.dp)).background(cardColor)
             .padding(vertical = 16.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

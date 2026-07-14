@@ -1,4 +1,5 @@
 package com.example.todolist.ui.auth
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,14 +35,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.ui.theme.*
 
 @Composable
 fun AuthScreen(
-    onLogin: (account: String, password: String) -> Unit = { _, _ -> },
-    onRegister: (name: String, account: String, password: String) -> Unit = { _, _, _ -> },
+    onLoginSuccess: () -> Unit,
+    viewModel: AuthViewModel = viewModel()
 ) {
     var isLogin by remember { mutableStateOf(true) }
+
+    val isLoading by viewModel.isLoading.collectAsState()
+    val loginResult by viewModel.loginResult.collectAsState()
+    val registerResult by viewModel.registerResult.collectAsState()
+
+    // Kiểm tra đã login chưa
+    LaunchedEffect(Unit) {
+        if (viewModel.isLoggedIn()) {
+            onLoginSuccess()
+        }
+    }
+
+    // Xử lý kết quả login
+    LaunchedEffect(loginResult) {
+        loginResult?.let { result ->
+            if (result.success) {
+                viewModel.clearResults()
+                onLoginSuccess()
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(BackgroundCream)) {
         Column(
@@ -72,9 +95,19 @@ fun AuthScreen(
                 label = "authForm"
             ) { loginMode ->
                 if (loginMode) {
-                    LoginForm(onLogin = onLogin)
+                    LoginForm(
+                        viewModel = viewModel,
+                        isLoading = isLoading,
+                        errorMessage = loginResult?.let { if (!it.success) it.message else null }
+                    )
                 } else {
-                    RegisterForm(onRegister = onRegister)
+                    RegisterForm(
+                        viewModel = viewModel,
+                        isLoading = isLoading,
+                        successMessage = registerResult?.let { if (it.success) it.message else null },
+                        errorMessage = registerResult?.let { if (!it.success) it.message else null },
+                        onRegisterSuccess = { isLogin = true }
+                    )
                 }
             }
 
@@ -84,6 +117,7 @@ fun AuthScreen(
         }
     }
 }
+
 @Composable
 private fun AuthHeader(isLogin: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -113,7 +147,6 @@ private fun AuthHeader(isLogin: Boolean) {
         )
     }
 }
-
 
 @Composable
 private fun AuthModeToggle(isLogin: Boolean, onToggle: (Boolean) -> Unit) {
@@ -159,9 +192,14 @@ private fun ToggleLabel(text: String, selected: Boolean, modifier: Modifier = Mo
         Text(text, color = if (selected) SurfaceWhite else TextMuted, fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }
-// Login form
+
+// Login form - ĐÃ GẮN API
 @Composable
-private fun LoginForm(onLogin: (String, String) -> Unit) {
+private fun LoginForm(
+    viewModel: AuthViewModel,
+    isLoading: Boolean,
+    errorMessage: String?
+) {
     var account by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -186,6 +224,16 @@ private fun LoginForm(onLogin: (String, String) -> Unit) {
             errorText = passwordError
         )
 
+        // Hiển thị lỗi từ API
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -206,17 +254,30 @@ private fun LoginForm(onLogin: (String, String) -> Unit) {
 
         Spacer(Modifier.height(4.dp))
 
-        PrimaryButton(text = "Log In") {
+        PrimaryButton(
+            text = if (isLoading) "Đang đăng nhập..." else "Log In",
+            enabled = !isLoading
+        ) {
             var hasError = false
-            if (account.isBlank()) { accountError = "Enter your email or username"; hasError = true }
-            if (password.isBlank()) { passwordError = "Enter your password"; hasError = true }
-            if (!hasError) onLogin(account, password)
+            if (account.isBlank()) { accountError = "Vui lòng nhập tài khoản hoặc email"; hasError = true }
+            if (password.isBlank()) { passwordError = "Vui lòng nhập mật khẩu"; hasError = true }
+            if (!hasError) {
+                // ✅ GỌI API LOGIN
+                viewModel.login(account, password)
+            }
         }
     }
 }
-// Register form
+
+// Register form - ĐÃ GẮN API
 @Composable
-private fun RegisterForm(onRegister: (String, String, String) -> Unit) {
+private fun RegisterForm(
+    viewModel: AuthViewModel,
+    isLoading: Boolean,
+    successMessage: String?,
+    errorMessage: String?,
+    onRegisterSuccess: () -> Unit
+) {
     var name by remember { mutableStateOf("") }
     var account by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -228,6 +289,13 @@ private fun RegisterForm(onRegister: (String, String, String) -> Unit) {
     var accountError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmError by remember { mutableStateOf<String?>(null) }
+
+    // Xử lý khi đăng ký thành công
+    LaunchedEffect(successMessage) {
+        successMessage?.let {
+            onRegisterSuccess()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         AuthTextField(
@@ -262,18 +330,45 @@ private fun RegisterForm(onRegister: (String, String, String) -> Unit) {
             errorText = confirmError
         )
 
+        // Hiển thị lỗi từ API
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
+
+        // Hiển thị thông báo thành công
+        if (successMessage != null) {
+            Text(
+                text = successMessage,
+                color = Color(0xFF4CAF50),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
+
         Spacer(Modifier.height(4.dp))
 
-        PrimaryButton(text = "Create Account") {
+        PrimaryButton(
+            text = if (isLoading) "Đang đăng ký..." else "Create Account",
+            enabled = !isLoading
+        ) {
             var hasError = false
-            if (name.isBlank()) { nameError = "Enter your name"; hasError = true }
-            if (account.isBlank()) { accountError = "Enter your email or username"; hasError = true }
-            if (password.length < 6) { passwordError = "At least 6 characters"; hasError = true }
-            if (confirmPassword != password) { confirmError = "Passwords don't match"; hasError = true }
-            if (!hasError) onRegister(name, account, password)
+            if (name.isBlank()) { nameError = "Họ và tên không được để trống"; hasError = true }
+            if (account.isBlank()) { accountError = "Tài khoản hoặc email không được để trống"; hasError = true }
+            if (password.length < 6) { passwordError = "Mật khẩu phải dài ít nhất 6 ký tự"; hasError = true }
+            if (confirmPassword != password) { confirmError = "Mật khẩu xác nhận không trùng khớp"; hasError = true }
+            if (!hasError) {
+                // ✅ GỌI API REGISTER
+                viewModel.register(name, account, password, confirmPassword)
+            }
         }
     }
 }
+
 // Shared field styles
 @Composable
 private fun AuthTextField(
@@ -378,19 +473,27 @@ private fun AuthPasswordField(
 }
 
 @Composable
-private fun PrimaryButton(text: String, onClick: () -> Unit) {
+private fun PrimaryButton(
+    text: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(54.dp)
             .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(AccentTerracotta, AccentTerracottaDeep)))
-            .clickable { onClick() },
+            .background(
+                if (enabled) Brush.linearGradient(listOf(AccentTerracotta, AccentTerracottaDeep))
+                else Brush.linearGradient(listOf(Color.Gray, Color.DarkGray))
+            )
+            .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(text, color = SurfaceWhite, fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
 }
+
 // Bottom switch link
 @Composable
 private fun SwitchModeText(isLogin: Boolean, onSwitch: () -> Unit) {
@@ -409,10 +512,11 @@ private fun SwitchModeText(isLogin: Boolean, onSwitch: () -> Unit) {
         )
     }
 }
+
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun AuthScreenPreview() {
     MaterialTheme {
-        AuthScreen()
+        AuthScreen(onLoginSuccess = {})
     }
 }

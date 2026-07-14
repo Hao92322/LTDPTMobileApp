@@ -1,4 +1,4 @@
-﻿using ToDoApp_BackEnd.Models;
+using ToDoApp_BackEnd.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -13,6 +13,7 @@ namespace ToDoApp_BackEnd.Data
         //public DbSet<User> Users { get; set; } identity auto quan ly 
         public DbSet<Category> Categories { get; set; }
         public DbSet<TodoItem> TodoItems { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);  // use for idnetity auto configution 

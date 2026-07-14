@@ -8,17 +8,17 @@ class MockTodoRepositoryImpl : TodoRepository {
     
     private val todoList = mutableListOf<HomeUiState>(
         HomeUiState(
-            "Uống Nước Sông", "Lượng nước: 500ml", 
+            0, "Uống Nước Sông", "Lượng nước: 500ml", 
             now, now.withHour(8).withMinute(0), 
             1, false, "Morning Routine"
         ),
         HomeUiState(
-            "Thiền tích nội công", "Thời gian: 15 phút", 
+            0, "Thiền tích nội công", "Thời gian: 15 phút", 
             now, now.withHour(9).withMinute(0), 
             2, false, "Morning Routine"
         ),
         HomeUiState(
-            "Check Email", "Xử lý inbox công việc", 
+            0, "Check Email", "Xử lý inbox công việc",
             now, now.withHour(10).withMinute(30), 
             0, false, "Work"
         )
