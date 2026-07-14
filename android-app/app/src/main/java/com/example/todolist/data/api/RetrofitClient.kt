@@ -9,10 +9,11 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     // ===================== TESTER CHÚ Ý =================================
-    // Thay đổi thường xuyên tùy theo WIFI hoặc cổng LAN
-    // Vào CMD -> gõ ipconfig -> Tìm IPv4 -> paste vào base IP đó -> sau đó ":5158"
+    // Cắm dây USB → chạy: adb reverse tcp:5158 tcp:5158  → dùng localhost
+    // Không cắm dây (WiFi) → dùng IP máy tính: "http://10.0.23.228:5158/"
+    // Emulator → dùng: "http://10.0.2.2:5158/"
     // ===================== 🫩🫩🫩 =================================
-    private const val BASE_URL = "http://10.0.23.228:5158/"
+    private const val BASE_URL = "http://localhost:5158/"
 
     // Cho Emulator: "http://10.0.2.2:5158/"
 
