@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using ToDoApp_BackEnd.Data;
 using ToDoApp_BackEnd.DTOs;
@@ -70,7 +70,7 @@ namespace ToDoApp_BackEnd.Services
 
             if (category == null)
                 throw new KeyNotFoundException("Category not found.");
-            if (model.Date.Date < DateTime.UtcNow) throw new KeyNotFoundException("Cannot Create Date in past.");
+            // Bỏ validation ngày trong quá khứ - múi giờ khác nhau gây lỗi
 
 
             var entity = new TodoItem
@@ -78,10 +78,11 @@ namespace ToDoApp_BackEnd.Services
                 Title = model.Title,
                 Description = model.Description,
                 CategoryId = model.CategoryId,
-                DueDate = model.Date.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
+                DueDate = model.DueDate ?? model.Date.Date.AddHours(23).AddMinutes(59),
                 Priority = model.Priority,
                 CreatedAt = DateTime.UtcNow,
-                IsCompleted = false
+                IsCompleted = false,
+                UserId = userId  // ✅ Gán UserId để filter đúng user
             };
 
             _context.TodoItems.Add(entity);
