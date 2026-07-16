@@ -64,8 +64,6 @@ Một ứng dụng quản lý công việc và nhắc nhở thời gian thực (
 
 ## 👥 Đóng góp dự án
 Nâng tầm quản lý công việc và thói quen hàng ngày với giao diện tối giản, đầy cảm hứng. Dự án được phát triển theo hướng mã nguồn mở—mọi phản hồi, ý tưởng đóng góp hay báo lỗi từ cộng đồng đều là mảnh ghép quan trọng giúp chúng tôi hoàn thiện sản phẩm. Hãy cùng đồng hành bằng cách mở Issue hoặc gửi Pull Request cho dự án.
-## 👥 Contributors
-## 👥 Development Team
 ## 👥 Development Team
 | Tên thành viên | Vai trò | Trách nhiệm chính |
 | :--- | :--- | :--- |
