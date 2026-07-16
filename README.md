@@ -71,7 +71,7 @@ Nâng tầm quản lý công việc và thói quen hàng ngày với giao diện
 | :--- | :--- | :--- |
 | **Phan Gia Bảo** | Backend Lead & Architect | Kiến trúc hệ thống, Thiết kế Database, Core Backend API & Security. |
 | **Huỳnh Khánh** | Full-stack Developer | Phát triển toàn bộ Frontend (UI/UX), hỗ trợ tối ưu Backend API & Tài liệu báo cáo. |
-| **Trần Văn Nam** | Project Leader | Quản lý dự án, điều phối tiến độ, phân tích yêu cầu. |
+| **Trần Văn Nam** | Leader | Quản lý dự án, điều phối tiến độ, phân tích yêu cầu, Quản lý tiến độ dự án, Soạn thảo báo cáo & Tài liệu thuyết trình.. |
 | **Nguyễn Kha Gia Hào** | Frontend Developer | Hỗ trợ thiết kế giao diện và xây dựng các thành phần Frontend. |
 | **Lục Vinh Khang** | QA Engineer | Kiểm thử tích hợp (Integration Testing), đảm bảo độ ổn định hệ thống. |
 
