@@ -63,4 +63,13 @@ Một ứng dụng quản lý công việc và nhắc nhở thời gian thực (
 ---
 
 ## 👥 Đóng góp dự án
-Nâng tầm quản lý công việc và thói quen hàng ngày với giao diện tối giản, đầy cảm hứng. Dự án được phát triển theo hướng mã nguồn mở—mọi phản hồi, ý tưởng đóng góp hay báo lỗi từ cộng đồng đều là mảnh ghép quan trọng giúp chúng tôi hoàn thiện sản phẩm. Hãy cùng đồng hành bằng cách mở Issue hoặc gửi Pull Request cho dự án
+Nâng tầm quản lý công việc và thói quen hàng ngày với giao diện tối giản, đầy cảm hứng. Dự án được phát triển theo hướng mã nguồn mở—mọi phản hồi, ý tưởng đóng góp hay báo lỗi từ cộng đồng đều là mảnh ghép quan trọng giúp chúng tôi hoàn thiện sản phẩm. Hãy cùng đồng hành bằng cách mở Issue hoặc gửi Pull Request cho dự án.
+## 👥 Contributors
+This project was developed by the following team members:
+
+- **Phan Gia Bảo** - [GitHub Profile](https://github.com/Pbao06) - *Developer, Backend & Architect*
+-**Trần Văn Nam** - [GitHub Profile](https://github.com/namtv-2910) - *Leader*
+- **Nguyễn Kha Gia Hào** - [GitHub Profile](https://github.com/Hao92322) - *Frontend & UI Design*
+- **Huỳnh Khánh]** - [GitHub Profile](https://github.com/HUYNHKHANH2006) - *Frontend & UI UX Design*
+-**Lục Vinh Khang** - [GitHub Profile](https://github.com/lucvinhkhang456-source) - *QA Engineer*
+
