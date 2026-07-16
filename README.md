@@ -61,6 +61,13 @@ Một ứng dụng quản lý công việc và nhắc nhở thời gian thực (
 4. Cấu hình IP máy chủ khi đăng nhập để app kết nối được với máy tính chạy backend của bạn.
 
 ---
+## 🎥 Video Demo
+### 🎞️ Video Chức năng Đăng nhập/Đăng ký
+<p align="center">
+  <video src="https://github.com/user-attachments/assets/1ee4134c-8bff-49d6-b015-fa8d022cb0b8" width="650px" autoplay loop muted playsinline></video>
+</p>
+
+---
 
 ## 👥 Đóng góp dự án
 Nâng tầm quản lý công việc và thói quen hàng ngày với giao diện tối giản, đầy cảm hứng. Dự án được phát triển theo hướng mã nguồn mở—mọi phản hồi, ý tưởng đóng góp hay báo lỗi từ cộng đồng đều là mảnh ghép quan trọng giúp chúng tôi hoàn thiện sản phẩm. Hãy cùng đồng hành bằng cách mở Issue hoặc gửi Pull Request cho dự án.
