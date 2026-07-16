@@ -278,15 +278,15 @@ private fun RegisterForm(
     errorMessage: String?,
     onRegisterSuccess: () -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var account by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmVisible by remember { mutableStateOf(false) }
 
-    var nameError by remember { mutableStateOf<String?>(null) }
-    var accountError by remember { mutableStateOf<String?>(null) }
+    var usernameError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmError by remember { mutableStateOf<String?>(null) }
 
@@ -299,20 +299,20 @@ private fun RegisterForm(
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         AuthTextField(
-            value = name,
-            onValueChange = { name = it; nameError = null },
-            label = "Full name",
-            placeholder = "Your name",
-            leadingIcon = Icons.Filled.Badge,
-            errorText = nameError
+            value = username,
+            onValueChange = { username = it; usernameError = null },
+            label = "Username",
+            placeholder = "Enter your username",
+            leadingIcon = Icons.Filled.Person,
+            errorText = usernameError
         )
         AuthTextField(
-            value = account,
-            onValueChange = { account = it; accountError = null },
-            label = "Account",
-            placeholder = "Email or username",
-            leadingIcon = Icons.Filled.Person,
-            errorText = accountError
+            value = email,
+            onValueChange = { email = it; emailError = null },
+            label = "Email",
+            placeholder = "Enter your email",
+            leadingIcon = Icons.Filled.Email,
+            errorText = emailError
         )
         AuthPasswordField(
             value = password,
@@ -357,13 +357,13 @@ private fun RegisterForm(
             enabled = !isLoading
         ) {
             var hasError = false
-            if (name.isBlank()) { nameError = "Họ và tên không được để trống"; hasError = true }
-            if (account.isBlank()) { accountError = "Tài khoản hoặc email không được để trống"; hasError = true }
+            if (username.isBlank()) { usernameError = "Tên đăng nhập không được để trống"; hasError = true }
+            if (email.isBlank()) { emailError = "Email không được để trống"; hasError = true }
             if (password.length < 6) { passwordError = "Mật khẩu phải dài ít nhất 6 ký tự"; hasError = true }
             if (confirmPassword != password) { confirmError = "Mật khẩu xác nhận không trùng khớp"; hasError = true }
             if (!hasError) {
                 // ✅ GỌI API REGISTER
-                viewModel.register(name, account, password, confirmPassword)
+                viewModel.register(username, email, password, confirmPassword)
             }
         }
     }
