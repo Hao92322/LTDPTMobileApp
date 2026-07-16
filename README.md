@@ -65,11 +65,15 @@ Một ứng dụng quản lý công việc và nhắc nhở thời gian thực (
 ## 👥 Đóng góp dự án
 Nâng tầm quản lý công việc và thói quen hàng ngày với giao diện tối giản, đầy cảm hứng. Dự án được phát triển theo hướng mã nguồn mở—mọi phản hồi, ý tưởng đóng góp hay báo lỗi từ cộng đồng đều là mảnh ghép quan trọng giúp chúng tôi hoàn thiện sản phẩm. Hãy cùng đồng hành bằng cách mở Issue hoặc gửi Pull Request cho dự án.
 ## 👥 Contributors
-This project was developed by the following team members:
+## 👥 Development Team
+## 👥 Development Team
+| Tên thành viên | Vai trò | Trách nhiệm chính |
+| :--- | :--- | :--- |
+| **Phan Gia Bảo** | Backend Lead & Architect | Kiến trúc hệ thống, Thiết kế Database, Core Backend API & Security. |
+| **Huỳnh Khánh** | Full-stack Developer | Phát triển toàn bộ Frontend (UI/UX), hỗ trợ tối ưu Backend API & Tài liệu báo cáo. |
+| **Trần Văn Nam** | Project Leader | Quản lý dự án, điều phối tiến độ, phân tích yêu cầu. |
+| **Nguyễn Kha Gia Hào** | Frontend Developer | Hỗ trợ thiết kế giao diện và xây dựng các thành phần Frontend. |
+| **Lục Vinh Khang** | QA Engineer | Kiểm thử tích hợp (Integration Testing), đảm bảo độ ổn định hệ thống. |
 
-- **Phan Gia Bảo** - [GitHub Profile](https://github.com/Pbao06) - *Developer, Backend & Architect*
--**Trần Văn Nam** - [GitHub Profile](https://github.com/namtv-2910) - *Leader*
-- **Nguyễn Kha Gia Hào** - [GitHub Profile](https://github.com/Hao92322) - *Frontend & UI Design*
-- **Huỳnh Khánh]** - [GitHub Profile](https://github.com/HUYNHKHANH2006) - *Frontend & UI UX Design*
--**Lục Vinh Khang** - [GitHub Profile](https://github.com/lucvinhkhang456-source) - *QA Engineer*
+
 
