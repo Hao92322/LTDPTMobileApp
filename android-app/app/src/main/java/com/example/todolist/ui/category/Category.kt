@@ -270,10 +270,12 @@ private fun CategoryCard(
                         isEditing = false
                     }
                 } else {
-                    IconActionButton(icon = Icons.Filled.Edit, tint = TextMuted, bg = rowBg) { isEditing = true }
-                    Spacer(Modifier.width(6.dp))
-                    IconActionButton(icon = Icons.Filled.DeleteOutline, tint = AccentTerracotta, bg = rowBg, onClick = onDeleteRequest)
-                    Spacer(Modifier.width(6.dp))
+                    if (category.name != "Công việc chung") {
+                        IconActionButton(icon = Icons.Filled.Edit, tint = TextMuted, bg = rowBg) { isEditing = true }
+                        Spacer(Modifier.width(6.dp))
+                        IconActionButton(icon = Icons.Filled.DeleteOutline, tint = AccentTerracotta, bg = rowBg, onClick = onDeleteRequest)
+                        Spacer(Modifier.width(6.dp))
+                    }
                     Icon(
                         imageVector = Icons.Filled.ExpandMore,
                         contentDescription = if (expanded) "Collapse" else "Expand",
