@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    private var currentBaseUrl = "http://192.168.1.69:5158/"
+    private var currentBaseUrl = "http://127.0.0.1:5158/"
     private var _apiService: ApiService? = null
 
     val apiService: ApiService
@@ -21,7 +21,7 @@ object RetrofitClient {
 
     fun initialize(context: android.content.Context) {
         val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
-        val savedIp = prefs.getString("backend_ip", "192.168.1.69") ?: "192.168.1.69"
+        val savedIp = prefs.getString("backend_ip", "127.0.0.1") ?: "127.0.0.1"
         currentBaseUrl = "http://$savedIp:5158/"
         _apiService = buildApiService(currentBaseUrl)
     }
